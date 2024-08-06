@@ -2,3 +2,9 @@ name = "GaussianEarth"
 uuid = "ecbaf281-070b-4ea8-b8ed-859c3fc153f3"
 authors = ["sandre "]
 version = "0.1.0"
+
+[deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
+ProgressBars = "49802e3a-d2f1-5c88-81d8-b72133a6f568"
