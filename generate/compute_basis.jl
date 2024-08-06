@@ -29,10 +29,15 @@ for variable_directory in ProgressBar(variable_directories)
     basis = U
     singular_values = S
 
+    Δϕ = reshape(2π / M * ones(M), (M, 1, 1))
+    Δθ = reshape(π / N * ones(N) .* cos.(deg2rad.(latitude)), (1, N, 1))
+    metric = (Δθ .* Δϕ) / (4π)
+
     hfile = h5open(save_directory * field_name * "_basis.hdf5", "w")
     hfile["basis"] = basis
     hfile["singular_values"] = singular_values
     hfile["latitude"] = latitude
     hfile["longitude"] = longitude
+    hfile["metric"] = metric
     close(hfile)
 end

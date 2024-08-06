@@ -25,9 +25,11 @@ for scenario in ProgressBar(scenario_directories)
 
         hfile = h5open(save_directory * field_name * "_basis.hdf5", "r")
         basis = read(hfile["basis"])
+        metric = read(hfile["metric"])
         close(hfile)
 
         projection = zeros(Float32, minimum([M*N, L]), L, length(file_names))
+        global_mean = zeros(Float32, L, length(file_names))
 
         for (i, file_name) in ProgressBar(enumerate(file_names))
             file_path = joinpath(local_current_path, file_name)
@@ -37,10 +39,12 @@ for scenario in ProgressBar(scenario_directories)
             reshaped_field = reshape(field, M * N, L)
             projected_field = basis' * reshaped_field
             projection[:, :, i] .= projected_field
+            global_mean[:, i] .= sum(metric .* field, dims = (1, 2))[:]
         end
 
         hfile = h5open(save_directory * field_name * "_" * scenario * "_projection.hdf5", "w")
         hfile["projection"] = projection
+        hfile["global mean"] = global_mean
         close(hfile)
     end
 end
