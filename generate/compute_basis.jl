@@ -18,7 +18,7 @@ for variable_directory in ProgressBar(variable_directories)
     file_path = joinpath(local_current_path, file_name)
 
     ds = Dataset(file_path)
-    field_name = keys(ds)[end]
+    field_name = keys(ds)[end] # always the last key for variable of interest
     field = Float32.(ds[field_name][:,:,:])
     latitude = Float32.(ds["lat"][:])
     longitude = Float32.(ds["lon"][:])
