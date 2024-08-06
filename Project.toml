@@ -1,0 +1,4 @@
+name = "GaussianEarth"
+uuid = "ecbaf281-070b-4ea8-b8ed-859c3fc153f3"
+authors = ["sandre "]
+version = "0.1.0"
