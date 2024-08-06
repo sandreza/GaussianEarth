@@ -5,7 +5,7 @@ data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
 
 scenario_directories = readdir(data_directory)
 @info "Computing Projection for all variables and all scenarios"
-for scenario in ProgressBar(scenario_directories[1:end])
+for scenario in ProgressBar(scenario_directories)
 
     current_path = joinpath(data_directory, scenario)
     variable_directories = readdir(current_path)
