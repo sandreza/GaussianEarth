@@ -14,7 +14,7 @@ for scenario in ProgressBar(scenario_directories[1:end])
         local_current_path = joinpath(current_path, variable_directory)
         file_names = readdir(local_current_path)
 
-        if length(file_names) > 0
+        if length(file_names) > 0 # sometimes the directory is empty
             file_name = file_names[1] # pick the first file for obtaining varaibles
             file_path = joinpath(local_current_path, file_name)
 
