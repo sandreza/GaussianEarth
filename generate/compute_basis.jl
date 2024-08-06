@@ -1,5 +1,8 @@
 using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
 
+import Base.Float32
+Float32(a::Missing) = Float32(0.0)
+
 save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
 data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
 
