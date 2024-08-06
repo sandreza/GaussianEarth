@@ -5,7 +5,7 @@ data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
 
 scenario_directories = readdir(data_directory)
 @info "Computing Projection for all variables and all scenarios"
-for scenario in ProgressBar(scenario_directories)
+for scenario in ProgressBar(scenario_directories[1:end])
 
     current_path = joinpath(data_directory, scenario)
     variable_directories = readdir(current_path)
@@ -28,7 +28,7 @@ for scenario in ProgressBar(scenario_directories)
         metric = read(hfile["metric"])
         close(hfile)
 
-        projection = zeros(Float32, minimum([M*N, L]), L, length(file_names))
+        projection = zeros(Float32, size(basis)[2], L, length(file_names))
         global_mean = zeros(Float32, L, length(file_names))
 
         for (i, file_name) in ProgressBar(enumerate(file_names))
