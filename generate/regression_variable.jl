@@ -12,7 +12,7 @@ for scenario in ProgressBar(scenario_directories)
     hfile = h5open(save_directory * field_name * "_" * scenario * "_projection.hdf5", "r")
     global_mean = read(hfile["global mean"])
     close(hfile)
-    ensemble_average = mean(global_mean, dims = 2)[:]
+    ensemble_average = mean(global_mean[:, [1:48..., 50]], dims = 2)[:]
     months = size(ensemble_average)[1] ÷ 12
     yearly_average = mean(reshape(ensemble_average, (12, months)), dims = 1)[:]
     regression_file[scenario] = yearly_average

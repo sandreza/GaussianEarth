@@ -62,8 +62,8 @@ month = 1
 order = 1
 regression_coefficients = Float32.(regression(modes, temperature, month; order))
 
-i =  1 # pick a mode
-j = 20 # pick a year
+i = 1 # pick a mode
+j = 1 # pick a year
 rc = regression_coefficients[i, :]
 model = sum([rc[k+1]* (temperature[j])^k for k in 0:order])
 truth = mean(modes[i, month:12:end, :], dims = 2)[j]
