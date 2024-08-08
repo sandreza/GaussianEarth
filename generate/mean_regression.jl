@@ -68,4 +68,3 @@ rc = regression_coefficients[i, :]
 model = sum([rc[k+1]* (temperature[j])^k for k in 0:order])
 truth = mean(modes[i, month:12:end, :], dims = 2)[j]
 relative_error_percent = abs.((model - truth) / truth) * 100
-
