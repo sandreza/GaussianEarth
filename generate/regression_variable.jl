@@ -16,5 +16,7 @@ for scenario in ProgressBar(scenario_directories)
     months = size(ensemble_average)[1] ÷ 12
     yearly_average = mean(reshape(ensemble_average, (12, months)), dims = 1)[:]
     regression_file[scenario] = yearly_average
+    regression_file[scenario * "_normalized"] = yearly_average / 273 # to avoid floating point errors
 end
+regression_file["normalization"] = 273
 close(regression_file)

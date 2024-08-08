@@ -1,5 +1,8 @@
 using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
 
+import Base.Float32
+Float32(a::Missing) = Float32(0.0)
+
 save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
 data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
 
@@ -31,6 +34,8 @@ for scenario in ProgressBar(scenario_directories)
 
             projection = zeros(Float32, size(basis)[2], L, length(file_names))
             global_mean = zeros(Float32, L, length(file_names))
+            ensemble_mean = zeros(Float32, M, N, L)
+            ensemble_second_moment = zeros(Float32, M, N, L)
 
             for (i, file_name) in ProgressBar(enumerate(file_names))
                 file_path = joinpath(local_current_path, file_name)
@@ -41,11 +46,16 @@ for scenario in ProgressBar(scenario_directories)
                 projected_field = basis' * reshaped_field
                 projection[:, :, i] .= projected_field
                 global_mean[:, i] .= sum(metric .* field, dims = (1, 2))[:]
+                ensemble_mean .+= field / length(file_names)
+                ensemble_second_moment .+= (field .^2) / length(file_names)
             end
+            ensemble_standard_deviation = sqrt.(abs.(ensemble_second_moment .- (ensemble_mean .^ 2) ) ) / (length(file_names) - 1) * length(file_names)
 
             hfile = h5open(save_directory * field_name * "_" * scenario * "_projection.hdf5", "w")
             hfile["projection"] = projection
             hfile["global mean"] = global_mean
+            hfile["ensemble mean"] = ensemble_mean
+            hfile["ensemble standard deviation"] = ensemble_standard_deviation
             close(hfile)
         end
     end
