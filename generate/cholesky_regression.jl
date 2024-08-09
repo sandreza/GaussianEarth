@@ -32,7 +32,7 @@ for i in 1:size(modes[1, 1:12:end, :])[1]
     end
 end
 
-total_modes = 100 # size(tmp[1].U)[1] ÷ 2
+total_modes = 1980 # size(tmp[1].U)[1] ÷ 2
 regression_modes = 10
 mat = zeros(Float64, total_modes, total_modes, order + 1);
 for kk in ProgressBar(1:total_modes^2)
@@ -69,27 +69,30 @@ function model_data(mat, temperature, order, j)
     return newmat
 end
 ##
-j = 3
+j = 20
 model = model_data(mat, temperature, order, j)
 truth = tmp[j].U
 model' * model
 truth' * truth
 ##
-function check_covariance(ii, jj)
-    a = Float64[]
-    b = Float64[]
-    for j in 1:251
+function check_covariance()
+    a = Matrix{Float64}[]
+    b = Matrix{Float64}[]
+    for j in ProgressBar(1:251)
         model = model_data(mat, temperature, order, j)
         truth = tmp[j].U
-        push!(a, (model' * model)[ii, jj])
-        push!(b, (truth' * truth)[ii, jj])
+        push!(a, (model' * model))
+        push!(b, (truth' * truth))
     end
     return a, b
 end
 ##
+aa, bb = check_covariance()
+##
 ii = 1
 jj = 1
-a, b = check_covariance(ii, jj)
+a = aa[ii, jj]
+b = bb[ii, jj]
 ##
 fig = Figure()
 ax = Axis(fig[1, 1])
