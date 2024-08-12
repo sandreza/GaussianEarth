@@ -6,7 +6,7 @@ inds = 1:30
 fields =  ["hurs", "huss", "pr", "tas"]
 for field in fields
     eof_mode, temperature = concatenate_log_regression(field, ["historical"])
-    eofs = eof_mode[:,:, inds...] # [1:48..., 50:50...]]
+    eofs = eof_mode[:,:, inds] # [1:48..., 50:50...]]
 
 
     fig = Figure(resolution = (1500, 1500))
