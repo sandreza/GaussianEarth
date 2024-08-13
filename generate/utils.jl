@@ -29,6 +29,14 @@ function log_eof_modes(variable, scenario; directory = "/net/fs06/d3/sandre/Gaus
     return projection
 end
 
+function metric_eof_modes(variable, scenario; directory = "/net/fs06/d3/sandre/GaussianEarthData")
+    file_name = "/$(variable)_$(scenario)_metric_projection.hdf5"
+    hfile = h5open(directory * file_name, "r")
+    projection = read(hfile["projection"]) # has all 12 months
+    close(hfile)
+    return projection
+end
+
 function concatenate_regression(variable, scenarios; directory = "/net/fs06/d3/sandre/GaussianEarthData", normalized = true)
     modes = eof_modes(variable, scenarios[1]; directory)
     temperature = regression_variable(scenarios[1]; directory, normalized)
@@ -48,6 +56,17 @@ function concatenate_log_regression(variable, scenarios; directory = "/net/fs06/
     end
     return modes, temperature
 end
+
+function concatenate_metric_regression(variable, scenarios; directory = "/net/fs06/d3/sandre/GaussianEarthData", normalized = true)
+    modes = metric_eof_modes(variable, scenarios[1]; directory)
+    temperature = regression_variable(scenarios[1]; directory, normalized)
+    for scenario in scenarios[2:end]
+        modes = cat(modes, metric_eof_modes(variable, scenario), dims = 2)
+        temperature = cat(temperature, regression_variable(scenario), dims = 1)
+    end
+    return modes, temperature
+end
+
 function regression(modes, temperature, month; order = 1, ensemble_members = 1:40)
     # horizontal axis
     order > 5 ? error("Order must be less than 5") : nothing

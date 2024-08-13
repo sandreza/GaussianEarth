@@ -1,8 +1,49 @@
 using CairoMakie
-# Only fit a few modes of the covariance matrix
+using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
+using LinearAlgebra
+
+include("utils.jl")
 ##
-cov1 = cov(modes[:,1,:])
-cov13 = cov(modes[:,13,:])
+save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
+data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
+scenario_directories = readdir(data_directory)
+current_path = joinpath(data_directory, scenario_directories[1])
+variable_directories = readdir(current_path)
+
+##
+field = "tas"
+modes, temperature = concatenate_regression(field, ["historical", "ssp585"])
+##
+regression_indices = [1:139..., 141:251...]
+inds = 1:30
+month = 1
+covariances = [cov(modes[:,i, inds], dims = 2) for i in ProgressBar(month:12:size(modes,2))]
+correlations = [cor(modes[:,i, inds], dims = 2) for i in ProgressBar(month:12:size(modes,2))]
+##
+fig = Figure()
+ii = 100
+jj = 100
+covarianceᵢⱼ = [covariances[i][ii,jj] for i in eachindex(covariances)]
+ax = Axis(fig[1, 1])
+scatter!(ax, temperature * 273, covarianceᵢⱼ, color = :blue)
+display(fig)
+##
+fig = Figure()
+ii = 100
+jj = 100
+correlationᵢⱼ = [correlations[i][ii,jj] for i in eachindex(correlations)]
+ax = Axis(fig[1, 1])
+scatter!(ax, temperature * 273, correlationᵢⱼ, color = :blue)
+display(fig)
+##
+average_covariance = mean(covariances)
+average_correlation = mean(correlations)
+##
+average_covariance[1:100, 1:100] .= 0.0
+##
+sum(abs.(average_correlation[200:end, 200:end]) .> 0.5)
+
+##
 ##
 regression_indices = [1:139..., 141:251...]
 ensemble_members = 1:40
