@@ -28,7 +28,7 @@ for variable_directory in ProgressBar(variable_directories)
     Δθ = reshape(π / N * ones(N) .* cos.(deg2rad.(latitude)), (1, N, 1))
     metric = (Δθ .* Δϕ) / (4π)
 
-    metric_weighted_field = sqrt.(metric) .* field
+    metric_weighted_field = sqrt.(metric) .* log.(field)
     reshaped_field = reshape(metric_weighted_field, M * N, L) .+ eps(eltype(field)(1.0))
     U, S, V = svd(reshaped_field)
 
@@ -37,7 +37,7 @@ for variable_directory in ProgressBar(variable_directories)
 
 
 
-    hfile = h5open(save_directory * field_name * "_metric_basis.hdf5", "w")
+    hfile = h5open(save_directory * field_name * "_metric_log_basis.hdf5", "w")
     hfile["basis"] = basis
     hfile["singular_values"] = singular_values
     hfile["latitude"] = latitude
