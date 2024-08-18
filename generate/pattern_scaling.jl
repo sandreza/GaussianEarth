@@ -74,11 +74,13 @@ end
 linear_fit_yearly = zeros(Float32, size(all_together)[1], size(all_together)[2], 2)
 for i in 1:size(all_together)[1]
     for j in 1:size(all_together)[2]
-        M, N = size(all_together[i,j, :, month, :])
+        M, N = size(all_together[i,j, :, 1, :])
         Y = reshape(mean(all_together[i,j, :, :, :], dims = 2)[:, 1, :], (M*N)) 
         linear_fit_yearly[i, j, :] .= X \ Y
     end
 end
+##
+
 ##
 using CairoMakie
 fig = Figure()
@@ -120,3 +122,11 @@ lines!(ax, x, model, label = "Model")
 lines!(ax, x, ensemble_temporal_average[i,j,:], label = "Ensemble")
 display(fig)
 save("pattern_scaling_model_at_11.png", fig)
+
+##
+using HDF5
+filename  = "tas_pattern_scaling.hdf5"
+hfile = h5open(save_directory * filename, "w")
+hfile["linear fit yearly"] = linear_fit_yearly
+hfile["linear fit monthly"] = linear_fit
+close(hfile)
