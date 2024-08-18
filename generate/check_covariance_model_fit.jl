@@ -12,13 +12,14 @@ variable_directories = readdir(current_path)
 
 ##
 field = "tas"
+for month in ProgressBar(1:12)
 covsave = h5open(save_directory * field * "_covariances.hdf5", "r")
-cov1 = covsave["covariances 1"][:,:,:]
+cov1 = covsave["covariances $month"][:,:,:]
 temperature = covsave["temperature"][:]
 scale = read(covsave["scale"])
 close(covsave)
 covsave = h5open(save_directory * field * "_covariances_model.hdf5", "r")
-L = covsave["L"][:,:, :]
+L = covsave["L" * "$month"][:,:, :]
 close(covsave)
 
 Σ⁰ = L[:,:,1]' * L[:,:,1]
@@ -53,4 +54,5 @@ for i in 1:9
     lines!(ax, temperature * scale, covs_model, color = :red)
 end
 display(fig)
-save("covariance_model_fit.png", fig)
+save("covariance_model_fit_month_$month.png", fig)
+end
