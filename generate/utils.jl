@@ -21,6 +21,14 @@ function eof_modes(variable, scenario; directory = "/net/fs06/d3/sandre/Gaussian
     return projection
 end
 
+function eof_basis(variable; directory = "/net/fs06/d3/sandre/GaussianEarthData")
+    file_name = "/$(variable)_basis.hdf5"
+    hfile = h5open(directory * file_name, "r")
+    basis = read(hfile["basis"])
+    close(hfile)
+    return basis
+end
+
 function log_eof_modes(variable, scenario; directory = "/net/fs06/d3/sandre/GaussianEarthData")
     file_name = "/$(variable)_$(scenario)_log_projection.hdf5"
     hfile = h5open(directory * file_name, "r")
@@ -83,6 +91,32 @@ function regression(modes, temperature, month; order = 1, ensemble_members = 1:4
         regression_coefficients[i, :] .= reshape(rX, length(rY), order + 1) \ reshape(rY, length(rY))
     end
     return regression_coefficients
+end
+
+function ensemble_averaging(scenario, variable; data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/", ensemble_members = 45)
+    current_path = joinpath(data_directory, scenario)
+    local_current_path = joinpath(current_path, variable)
+    file_names = readdir(local_current_path)
+    fields = Array{Float32, 3}[]
+    if length(file_names) > 0 # sometimes the directory is empty
+        file_name = file_names[1] # pick the first file for obtaining varaibles
+        file_path = joinpath(local_current_path, file_name)
+        for (i, file_name) in ProgressBar(enumerate(file_names[1:ensemble_members]))
+            file_path = joinpath(local_current_path, file_name)
+            ds = Dataset(file_path)
+            field = Float32.(ds[variable][:,:,:])
+            push!(fields, field)
+        end
+    end
+    time1 = size(fields[1])[end]
+    monthtime1 = time1 ÷ 12
+    all_together = zeros(Float32, size(fields[1])[1], size(fields[1])[2], monthtime1, 12, ensemble_members);
+    for ω in ProgressBar(1:ensemble_members)
+        for month in 1:12
+            @inbounds all_together[:,:, 1:monthtime1, month, ω] .= fields[ω][:, :, month:12:end]
+        end
+    end
+    return mean(all_together, dims = 5)[:,:,:,:,1], mean(all_together, dims = (4, 5))[:,:,:,1, 1]
 end
 
 # computing statistics 

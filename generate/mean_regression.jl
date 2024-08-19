@@ -9,16 +9,25 @@ current_path = joinpath(data_directory, scenario_directories[1])
 variable_directories = readdir(current_path)
 
 ##
-field = "tas"
-modes, temperature = concatenate_regression(field, ["historical", "ssp585"])
+for field in ProgressBar(["tas"])
+    modes, temperature = concatenate_regression(field, ["historical", "ssp585"])
+    order = 1
+    hfile = h5open(save_directory * field * "_mean_regression.hdf5", "w") 
+    for month in ProgressBar(1:12)
+        regression_coefficients = Float32.(regression(modes, temperature, month; order))
+        hfile["regression_coefficients $month"] = regression_coefficients
+    end
+    close(hfile)
+end
 
-month = 1
-order = 1
-regression_coefficients = Float32.(regression(modes, temperature, month; order))
-
-i = 1 # pick a mode
-j = 1 # pick a year
-rc = regression_coefficients[i, :]
-model = sum([rc[k+1]* (temperature[j])^k for k in 0:order])
-truth = mean(modes[i, month:12:end, :], dims = 2)[j]
-relative_error_percent = abs.((model - truth) / truth) * 100
+for field in ProgressBar(["hurs"])
+    modes, temperature = concatenate_regression(field, ["historical", "ssp585"])
+    ensemble_members = 1:30
+    order = 1
+    hfile = h5open(save_directory * field * "_mean_regression.hdf5", "w") 
+    for month in ProgressBar(1:12)
+        regression_coefficients = Float32.(regression(modes, temperature, month; order, ensemble_members))
+        hfile["regression_coefficients $month"] = regression_coefficients
+    end
+    close(hfile)
+end
