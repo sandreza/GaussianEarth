@@ -20,4 +20,4 @@ docs/site/
 *.json*
 *.vscode*
 *.png*
-
+*tmp*
