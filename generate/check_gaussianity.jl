@@ -1,17 +1,7 @@
 using CairoMakie, Statistics, ProgressBars
 
-function kurtosis(x)
-    n = length(x)
-    μ = mean(x)
-    σ = std(x)
-    return sum((x .- μ).^4) / (n * σ^4) - 3
-end
-function skewness(x)
-    n = length(x)
-    μ = mean(x)
-    σ = std(x)
-    return sum((x .- μ).^3) / (n * σ^3)
-end
+include("utils.jl")
+
 
 fields =  ["hurs", "huss", "pr", "tas"]
 for field in fields
@@ -23,7 +13,6 @@ for field in fields
     inds = 1:30
     N = 5
     temp = temperature[inds] * 273
-    gaussian(x, μ, σ) = exp(-0.5 * ((x .- μ) ./ σ).^2) ./ sqrt(2π * σ^2)
     lower_order_statistics = Vector{Float64}[]
     for i in 1:N^2
         ii = div(i-1, N) + 1

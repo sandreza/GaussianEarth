@@ -93,6 +93,32 @@ function regression(modes, temperature, month; order = 1, ensemble_members = 1:4
     return regression_coefficients
 end
 
+function common_array(scenario, variable; data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/", ensemble_members = 45)
+    current_path = joinpath(data_directory, scenario)
+    local_current_path = joinpath(current_path, variable)
+    file_names = readdir(local_current_path)
+    fields = Array{Float32, 3}[]
+    if length(file_names) > 0 # sometimes the directory is empty
+        file_name = file_names[1] # pick the first file for obtaining varaibles
+        file_path = joinpath(local_current_path, file_name)
+        for (i, file_name) in ProgressBar(enumerate(file_names[1:ensemble_members]))
+            file_path = joinpath(local_current_path, file_name)
+            ds = Dataset(file_path)
+            field = Float32.(ds[variable][:,:,:])
+            push!(fields, field)
+        end
+    end
+    time1 = size(fields[1])[end]
+    monthtime1 = time1 ÷ 12
+    all_together = zeros(Float32, size(fields[1])[1], size(fields[1])[2], monthtime1, 12, ensemble_members);
+    for ω in ProgressBar(1:ensemble_members)
+        for month in 1:12
+            @inbounds all_together[:,:, 1:monthtime1, month, ω] .= fields[ω][:, :, month:12:end]
+        end
+    end
+    return all_together
+end
+
 function ensemble_averaging(scenario, variable; data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/", ensemble_members = 45)
     current_path = joinpath(data_directory, scenario)
     local_current_path = joinpath(current_path, variable)
@@ -133,3 +159,5 @@ function skewness(x)
     σ = std(x)
     return sum((x .- μ).^3) / (n * σ^3)
 end
+
+gaussian(x, μ, σ) = exp(-0.5 * ((x .- μ) ./ σ).^2) ./ sqrt(2π * σ^2)
