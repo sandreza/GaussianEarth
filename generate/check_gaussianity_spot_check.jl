@@ -67,10 +67,10 @@ for i in ProgressBar(1:192)
     end
 end
 
-kurtosis_max = argmax(abs.(κs))
-skewness_max = argmax(abs.(ρs))
-kurtosis_min = argmin(abs.(κs))
-skewness_min = argmin(abs.(ρs))
+kurtosis_max = argmax(κs)
+skewness_max = argmax(ρs)
+kurtosis_min = argmin(κs)
+skewness_min = argmin(ρs)
 
 
 for (j, mode_number) in enumerate(sort([1, kurtosis_min, skewness_min, kurtosis_max, skewness_max]))
@@ -159,10 +159,10 @@ for i in ProgressBar(1:192)
     end
 end
 
-kurtosis_max = argmax(abs.(κs))
-skewness_max = 14820 # argmax(abs.(ρs))
-kurtosis_min = argmin(abs.(κs))
-skewness_min = argmin(abs.(ρs))
+kurtosis_max = sortperm(κs)[2]
+skewness_max = argmax(ρs)
+kurtosis_min = argmin(κs)
+skewness_min = argmin(ρs)
 
 
 for (j, mode_number) in enumerate(sort([1, kurtosis_min, skewness_min, kurtosis_max, skewness_max]))
