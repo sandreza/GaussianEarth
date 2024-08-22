@@ -1,4 +1,5 @@
 using CairoMakie, Statistics, ProgressBars
+using Printf
 
 include("utils.jl")
 include("emulator.jl")
@@ -11,6 +12,8 @@ eofs = eof_mode[:,:, 1:45] # [1:48..., 50:50...]]
 
 historical_field = common_array("historical", field)
 hfile = h5open(save_directory * field * "_basis.hdf5", "r")
+latitude = read(hfile["latitude"])
+longitude = read(hfile["longitude"])
 metric = read(hfile["metric"])
 close(hfile)
 
@@ -373,17 +376,18 @@ global_mean_basis = mean(reshape(emulator.basis, (192, 96, 1980)), dims = 1)[1, 
 mean_modes = mode_mean(emulator; modes = 1000)
 σs = [sqrt(global_mean_basis[i, :]' * (Σ * global_mean_basis[i,:])) for i in ProgressBar(1:96)]
 μs = [mean_modes' * global_mean_basis[i, :] for i in 1:96]
-lines!(ax, 1:96, latitude_mean, color = :purple, label = "data")
-band!(ax, 1:96, latitude_mean .- 3 * latitude_std, latitude_mean .+ 3 * latitude_std, color = (:purple, 0.2))
+lines!(ax, latitude[1:96], latitude_mean, color = :purple, label = "data")
+band!(ax, latitude[1:96], latitude_mean .- 3 * latitude_std, latitude_mean .+ 3 * latitude_std, color = (:purple, 0.2))
 ax = Axis(fig[1,2]; title = "Latitude Mean and Variance (model)", xlabel = "Latitude", ylabel = "Temperature (K)")
-lines!(ax, 1:96, μs, color = :blue, label = "data")
-band!(ax, 1:96, μs .- 3 * σs, μs .+ 3 * σs, color = (:blue, 0.2))
+lines!(ax, latitude[1:96], μs, color = :blue, label = "data")
+band!(ax, latitude[1:96], μs .- 3 * σs, μs .+ 3 * σs, color = (:blue, 0.2))
 display(fig)
 save("latitude_mean_model_emulator.png", fig)
 ##
-fig = Figure(resolution = (2000, 500)) 
+fig = Figure(resolution = (2000, 300)) 
 for (i, lat_index) in enumerate([1, 24, 48, 72, 96])
-    ax = Axis(fig[1,i]; xlabel = "Temperature (K)", ylabel = "Probability Density", title = "Latitude $lat_index")
+    latitude_string = @sprintf("Latitude %.2f", latitude[lat_index])
+    ax = Axis(fig[1,i]; xlabel = "Temperature (K)", ylabel = "Probability Density", title = latitude_string)
     σ = σs[lat_index]
     μ = μs[lat_index]
     x = range(μ - 4σ, μ + 4σ, length = 100)
@@ -395,3 +399,34 @@ for (i, lat_index) in enumerate([1, 24, 48, 72, 96])
     end
 end
 save("latitude_mean_model_emulator_locations.png", fig)
+##
+##
+fig = Figure(resolution = (2000, 600)) 
+ga = fig[1, 1] = GridLayout()
+ax = Axis(ga[1,1]; title = "Zonal Average (Data)", ylabel = "Temperature (K)", xlabel = "Latitude")
+lines!(ax, latitude[1:96], latitude_mean, color = :purple, label = "data")
+band!(ax, latitude[1:96], latitude_mean .- 3 * latitude_std, latitude_mean .+ 3 * latitude_std, color = (:purple, 0.2))
+ylims!(ax, 220, 310)
+ax = Axis(ga[1,2]; title = "Zonal Average (Model)", xlabel = "Latitude")
+lines!(ax, latitude[1:96], μs, color = :blue, label = "data")
+band!(ax, latitude[1:96], μs .- 3 * σs, μs .+ 3 * σs, color = (:blue, 0.2))
+ylims!(ax, 220, 310)
+gb = fig[2, 1] = GridLayout()
+for (i, lat_index) in enumerate([1, 24, 48, 72, 96])
+    latitude_string = @sprintf("Latitude %.2f", latitude[lat_index])
+    if i == 1
+        ax = Axis(gb[1,i]; xlabel = "Temperature (K)", ylabel = "Probability Density", title = latitude_string)
+    else
+        ax = Axis(gb[1,i]; xlabel = "Temperature (K)", title = latitude_string)
+    end
+    σ = σs[lat_index]
+    μ = μs[lat_index]
+    x = range(μ - 4σ, μ + 4σ, length = 100)
+    y = gaussian.(x, μ, σ)
+    hist!(ax, global_mean_field[lat_index, :, :][:], bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "data")
+    lines!(ax, x, y, color = :blue, label = "emulator")
+    if i == 1
+        axislegend(ax, position = :lt)
+    end
+end
+save("latitude_mean_model_emulator_locations_together.png", fig)
