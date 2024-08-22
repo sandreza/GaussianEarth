@@ -3,7 +3,7 @@ using CairoMakie, Statistics, ProgressBars
 include("utils.jl")
 include("emulator.jl")
 
-#=
+
 month = 1
 field = "tas"
 eof_mode, temperature = concatenate_regression(field, ["historical"])
@@ -19,7 +19,7 @@ acceptible_inds_lower = (temperature .> minimum(temperature[year_inds]))
 acceptible_inds_upper = (temperature .< maximum(temperature[year_inds]))
 acceptible_inds = acceptible_inds_lower .& acceptible_inds_upper
 year_inds = collect(eachindex(temperature))[acceptible_inds]
-=#
+
 ##
 modes = 1000 
 mean_field = mean(emulator; modes)
@@ -359,3 +359,39 @@ hist!(ax, global_mean_field, bins = 25, color = (:purple, 0.5), normalization = 
 lines!(ax, x, y, color = :blue, label = "emulator")
 display(fig)
 save("global_mean_model_emulator_2.png", fig)
+
+##
+fig = Figure() 
+ax = Axis(fig[1,1]; title = "Latitude Mean and Variance (data)", xlabel = "Latitude", ylabel = "Temperature (K)")
+rmetric = reshape(metric, (192, 96, 1, 1, 1))
+fmetric = reshape(metric, (192 * 96, 1))
+global_mean_field = mean(historical_field[:, :, year_inds, month, :], dims = 1)[1, :, :, :]
+latitude_mean = mean(global_mean_field, dims = (2, 3))[:]
+latitude_std = std(global_mean_field, dims = (2, 3))[:]
+global_mean_basis = mean(reshape(emulator.basis, (192, 96, 1980)), dims = 1)[1, :, 1:1000]
+Σ = emulator_variance(emulator)
+mean_modes = mode_mean(emulator; modes = 1000)
+σs = [sqrt(global_mean_basis[i, :]' * (Σ * global_mean_basis[i,:])) for i in ProgressBar(1:96)]
+μs = [mean_modes' * global_mean_basis[i, :] for i in 1:96]
+lines!(ax, 1:96, latitude_mean, color = :purple, label = "data")
+band!(ax, 1:96, latitude_mean .- 3 * latitude_std, latitude_mean .+ 3 * latitude_std, color = (:purple, 0.2))
+ax = Axis(fig[1,2]; title = "Latitude Mean and Variance (model)", xlabel = "Latitude", ylabel = "Temperature (K)")
+lines!(ax, 1:96, μs, color = :blue, label = "data")
+band!(ax, 1:96, μs .- 3 * σs, μs .+ 3 * σs, color = (:blue, 0.2))
+display(fig)
+save("latitude_mean_model_emulator.png", fig)
+##
+fig = Figure(resolution = (2000, 500)) 
+for (i, lat_index) in enumerate([1, 24, 48, 72, 96])
+    ax = Axis(fig[1,i]; xlabel = "Temperature (K)", ylabel = "Probability Density", title = "Latitude $lat_index")
+    σ = σs[lat_index]
+    μ = μs[lat_index]
+    x = range(μ - 4σ, μ + 4σ, length = 100)
+    y = gaussian.(x, μ, σ)
+    hist!(ax, global_mean_field[lat_index, :, :][:], bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "data")
+    lines!(ax, x, y, color = :blue, label = "emulator")
+    if i == 1
+        axislegend(ax, position = :lt)
+    end
+end
+save("latitude_mean_model_emulator_locations.png", fig)
