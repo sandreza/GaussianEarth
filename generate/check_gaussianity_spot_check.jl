@@ -1,6 +1,12 @@
-using CairoMakie, Statistics, ProgressBars
+using CairoMakie, Statistics, ProgressBars, Printf
 
 include("utils.jl")
+
+hfile = h5open(save_directory * field_name * "_basis.hdf5", "r")
+latitude = read(hfile["latitude"])
+longitude = read(hfile["longitude"])
+metric = read(hfile["metric"])
+close(hfile)
 
 month = 1
 field = "tas"
@@ -82,7 +88,10 @@ for (j, mode_number) in enumerate(sort([gaussian_max, kurtosis_min, skewness_min
     ii = (mode_number-1)÷96 + 1
     jj = (mode_number-1)%96 + 1
 
-    ax = Axis(fig[2, j]; title = "Location ($ii, $jj)")
+    lat = latitude[ii]
+    lon = longitude[jj]
+    title_string = @sprintf("Location (%.2f, %.2f)", lat, lon)
+    ax = Axis(fig[2, j]; title = title_string)
     month_field = historical_field[ii, jj, year_inds, month, :][:]
     μ = mean(month_field)
     σ = std(month_field)

@@ -7,6 +7,13 @@ include("emulator.jl")
 
 month = 1
 field = "tas"
+
+hfile = h5open(save_directory * field * "_basis.hdf5", "r")
+latitude = read(hfile["latitude"])
+longitude = read(hfile["longitude"])
+metric = read(hfile["metric"])
+close(hfile)
+
 eof_mode, temperature = concatenate_regression(field, ["historical"])
 eofs = eof_mode[:,:, 1:45] # [1:48..., 50:50...]]
 
@@ -54,7 +61,7 @@ fig = Figure(resolution = (2000, 500))
 inds = 1:45
 lower_order_statistics = Vector{Float64}[]
 for (j, mode_number) in enumerate(sort([gaussian_max, skewness_min, skewness_max, kurtosis_min, kurtosis_max]))
-    ax = Axis(fig[1, j]; title = "Mode $mode_number")
+    ax = Axis(fig[1, j]; title = "Mode $mode_number", xlabel = "Amplitude", ylabel = "Probability Density")
 
     month_eof = eofs[mode_number, month:12:end, :]
     month_eof = month_eof[year_inds, :][:]
@@ -65,14 +72,17 @@ for (j, mode_number) in enumerate(sort([gaussian_max, skewness_min, skewness_max
     push!(lower_order_statistics, [μ, σ, κ, ρ])
     x = range(μ - 4σ, μ + 4σ, length = 100)
     y = gaussian.(x, μ, σ)
-    hist!(ax, month_eof, bins = 25, color = (:purple, 0.5), normalization = :pdf)
-    lines!(ax, x, y, color = :red)
+    hist!(ax, month_eof, bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
+    # lines!(ax, x, y, color = :red)
 
     μ = mean_modes[mode_number]
     σ = sqrt(variance_modes[mode_number])
     y = gaussian.(x, μ, σ)
-    lines!(ax, x, y, color = :blue)
+    lines!(ax, x, y, color = :blue, label = "Emulator")
     xlims!(ax, μ - 4σ, μ + 4σ)
+    if j == 1 
+        axislegend(ax, position = :lt)
+    end
 end
 display(fig)
 save(field * "_eof_gaussian_with_model.png", fig)
@@ -102,7 +112,10 @@ for (j, mode_number) in enumerate(sort([gaussian_max, kurtosis_min, skewness_min
     ii = (mode_number-1)%192 + 1
     jj = (mode_number-1)÷192 + 1
 
-    ax = Axis(fig[2, j]; title = "Location ($ii, $jj)")
+    lat = latitude[jj]
+    lon = longitude[ii]
+    titlestring = @sprintf("%.2fᵒ, %.2fᵒ", lon, lat)
+    ax = Axis(fig[2, j]; title = titlestring, xlabel = "Temperature (K)", ylabel = "Probability Density")
     month_field = historical_field[ii, jj, year_inds, month, :][:]
     μ = mean(month_field)
     σ = std(month_field)
@@ -111,10 +124,10 @@ for (j, mode_number) in enumerate(sort([gaussian_max, kurtosis_min, skewness_min
     push!(lower_order_statistics, [μ, σ, κ, ρ])
     x = range(μ - 4σ, μ + 4σ, length = 100)
     y = gaussian.(x, μ, σ)
-    hist!(ax, month_field, bins = 25, color = (:purple, 0.5), normalization = :pdf)
-    lines!(ax, x, y, color = :red, label = "fit")
+    hist!(ax, month_field, bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
+    # lines!(ax, x, y, color = :red, label = "fit")
     y = gaussian.(x, mean_field[mode_number], sqrt(variance_field[mode_number]))
-    lines!(ax, x, y, color = :blue, label = "model")
+    lines!(ax, x, y, color = :blue, label = "Emulator")
     xlims!(ax, μ - 4σ, μ + 4σ)
 end
 
@@ -156,7 +169,7 @@ fig = Figure(resolution = (2000, 500))
 inds = 1:45
 lower_order_statistics = Vector{Float64}[]
 for (j, mode_number) in enumerate(sort([gaussian_max, skewness_min, skewness_max, kurtosis_min, kurtosis_max]))
-    ax = Axis(fig[1, j]; title = "Mode $mode_number")
+    ax = Axis(fig[1, j]; title = "Mode $mode_number", xlabel = "Amplitude", ylabel = "Probability Density")
 
     month_eof = eofs[mode_number, month:12:end, :]
     month_eof = month_eof[year_inds, :][:]
@@ -167,14 +180,17 @@ for (j, mode_number) in enumerate(sort([gaussian_max, skewness_min, skewness_max
     push!(lower_order_statistics, [μ, σ, κ, ρ])
     x = range(μ - 4σ, μ + 4σ, length = 100)
     y = gaussian.(x, μ, σ)
-    hist!(ax, month_eof, bins = 25, color = (:purple, 0.5), normalization = :pdf)
+    hist!(ax, month_eof, bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
     lines!(ax, x, y, color = :red)
 
     μ = mean_modes[mode_number]
     σ = sqrt(variance_modes[mode_number])
     y = gaussian.(x, μ, σ)
-    lines!(ax, x, y, color = :blue)
+    lines!(ax, x, y, color = :blue, label = "Emulator")
     xlims!(ax, μ - 4σ, μ + 4σ)
+    if j == 1 
+        axislegend(ax, position = :lt)
+    end
 end
 display(fig)
 save(field * "_eof_gaussian_with_model.png", fig)
@@ -204,7 +220,8 @@ for (j, mode_number) in enumerate(sort([gaussian_max, kurtosis_min, skewness_min
     ii = (mode_number-1)%192 + 1
     jj = (mode_number-1)÷192 + 1
 
-    ax = Axis(fig[2, j]; title = "Location ($ii, $jj)")
+    titlestring = @sprintf("%.2fᵒ, %.2fᵒ", lon, lat)
+    ax = Axis(fig[2, j]; title = titlestring, xlabel = "Temperature (K)", ylabel = "Probability Density")
     month_field = historical_field[ii, jj, year_inds, month, :][:]
     μ = mean(month_field)
     σ = std(month_field)
@@ -213,10 +230,10 @@ for (j, mode_number) in enumerate(sort([gaussian_max, kurtosis_min, skewness_min
     push!(lower_order_statistics, [μ, σ, κ, ρ])
     x = range(μ - 4σ, μ + 4σ, length = 100)
     y = gaussian.(x, μ, σ)
-    hist!(ax, month_field, bins = 25, color = (:purple, 0.5), normalization = :pdf)
-    lines!(ax, x, y, color = :red, label = "fit")
+    hist!(ax, month_field, bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
+    # lines!(ax, x, y, color = :red, label = "fit")
     y = gaussian.(x, mean_field[mode_number], sqrt(variance_field[mode_number]))
-    lines!(ax, x, y, color = :blue, label = "model")
+    lines!(ax, x, y, color = :blue, label = "Emulator")
     xlims!(ax, μ - 4σ, μ + 4σ)
 end
 
@@ -258,7 +275,7 @@ fig = Figure(resolution = (2000, 500))
 inds = 1:45
 lower_order_statistics = Vector{Float64}[]
 for (j, mode_number) in enumerate(sort([gaussian_max, skewness_min, skewness_max, kurtosis_min, kurtosis_max]))
-    ax = Axis(fig[1, j]; title = "Mode $mode_number")
+    ax = Axis(fig[1, j]; title = "Mode $mode_number", xlabel = "Amplitude", ylabel = "Probability Density")
 
     month_eof = eofs[mode_number, month:12:end, :]
     month_eof = month_eof[year_inds, :][:]
@@ -269,14 +286,17 @@ for (j, mode_number) in enumerate(sort([gaussian_max, skewness_min, skewness_max
     push!(lower_order_statistics, [μ, σ, κ, ρ])
     x = range(μ - 4σ, μ + 4σ, length = 100)
     y = gaussian.(x, μ, σ)
-    hist!(ax, month_eof, bins = 25, color = (:purple, 0.5), normalization = :pdf)
+    hist!(ax, month_eof, bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
     lines!(ax, x, y, color = :red)
 
     μ = mean_modes[mode_number]
     σ = sqrt(variance_modes[mode_number])
     y = gaussian.(x, μ, σ)
-    lines!(ax, x, y, color = :blue)
+    lines!(ax, x, y, color = :blue, label = "Emulator")
     xlims!(ax, μ - 4σ, μ + 4σ)
+    if j == 1 
+        axislegend(ax, position = :lt)
+    end
 end
 display(fig)
 save(field * "_eof_gaussian_with_model.png", fig)
@@ -305,8 +325,8 @@ gaussian_max = argmin(abs.(κs) + abs.(ρs))
 for (j, mode_number) in enumerate(sort([gaussian_max, kurtosis_min, skewness_min, kurtosis_max, skewness_max]))
     ii = (mode_number-1)%192 + 1
     jj = (mode_number-1)÷192 + 1
-
-    ax = Axis(fig[2, j]; title = "Location ($ii, $jj)")
+    titlestring = @sprintf("%.2fᵒ, %.2fᵒ", lon, lat)
+    ax = Axis(fig[2, j]; title = titlestring, xlabel = "Temperature (K)", ylabel = "Probability Density")
     month_field = historical_field[ii, jj, year_inds, month, :][:]
     μ = mean(month_field)
     σ = std(month_field)
@@ -315,10 +335,10 @@ for (j, mode_number) in enumerate(sort([gaussian_max, kurtosis_min, skewness_min
     push!(lower_order_statistics, [μ, σ, κ, ρ])
     x = range(μ - 4σ, μ + 4σ, length = 100)
     y = gaussian.(x, μ, σ)
-    hist!(ax, month_field, bins = 25, color = (:purple, 0.5), normalization = :pdf)
-    lines!(ax, x, y, color = :red, label = "fit")
+    hist!(ax, month_field, bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
+   # lines!(ax, x, y, color = :red, label = "fit")
     y = gaussian.(x, mean_field[mode_number], sqrt(variance_field[mode_number]))
-    lines!(ax, x, y, color = :blue, label = "model")
+    lines!(ax, x, y, color = :blue, label = "Emulator")
     xlims!(ax, μ - 4σ, μ + 4σ)
 end
 
@@ -339,7 +359,7 @@ mean_modes = mode_mean(emulator; modes = 1000)
 std(global_mean_field )
 x = range(μ - 4σ, μ + 4σ, length = 100)
 y = gaussian.(x, μ, σ)
-hist!(ax, global_mean_field, bins = 25, color = (:purple, 0.5), normalization = :pdf)
+hist!(ax, global_mean_field, bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
 lines!(ax, x, y, color = :blue, label = "emulator")
 display(fig)
 save("global_mean_model_emulator.png", fig)
@@ -358,14 +378,14 @@ mean_modes = mode_mean(emulator; modes = 1000)
 std(global_mean_field )
 x = range(μ - 4σ, μ + 4σ, length = 100)
 y = gaussian.(x, μ, σ)
-hist!(ax, global_mean_field, bins = 25, color = (:purple, 0.5), normalization = :pdf)
+hist!(ax, global_mean_field, bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
 lines!(ax, x, y, color = :blue, label = "emulator")
 display(fig)
 save("global_mean_model_emulator_2.png", fig)
 
 ##
 fig = Figure() 
-ax = Axis(fig[1,1]; title = "Latitude Mean and Variance (data)", xlabel = "Latitude", ylabel = "Temperature (K)")
+ax = Axis(fig[1,1]; title = "Latitude Mean and Variance (Data)", xlabel = "Latitude", ylabel = "Temperature (K)")
 rmetric = reshape(metric, (192, 96, 1, 1, 1))
 fmetric = reshape(metric, (192 * 96, 1))
 global_mean_field = mean(historical_field[:, :, year_inds, month, :], dims = 1)[1, :, :, :]
@@ -378,7 +398,7 @@ mean_modes = mode_mean(emulator; modes = 1000)
 μs = [mean_modes' * global_mean_basis[i, :] for i in 1:96]
 lines!(ax, latitude[1:96], latitude_mean, color = :purple, label = "data")
 band!(ax, latitude[1:96], latitude_mean .- 3 * latitude_std, latitude_mean .+ 3 * latitude_std, color = (:purple, 0.2))
-ax = Axis(fig[1,2]; title = "Latitude Mean and Variance (model)", xlabel = "Latitude", ylabel = "Temperature (K)")
+ax = Axis(fig[1,2]; title = "Latitude Mean and Variance (Emulator)", xlabel = "Latitude", ylabel = "Temperature (K)")
 lines!(ax, latitude[1:96], μs, color = :blue, label = "data")
 band!(ax, latitude[1:96], μs .- 3 * σs, μs .+ 3 * σs, color = (:blue, 0.2))
 display(fig)
@@ -392,7 +412,7 @@ for (i, lat_index) in enumerate([1, 24, 48, 72, 96])
     μ = μs[lat_index]
     x = range(μ - 4σ, μ + 4σ, length = 100)
     y = gaussian.(x, μ, σ)
-    hist!(ax, global_mean_field[lat_index, :, :][:], bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "data")
+    hist!(ax, global_mean_field[lat_index, :, :][:], bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
     lines!(ax, x, y, color = :blue, label = "emulator")
     if i == 1
         axislegend(ax, position = :lt)
