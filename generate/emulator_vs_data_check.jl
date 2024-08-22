@@ -407,7 +407,7 @@ ax = Axis(ga[1,1]; title = "Zonal Average (Data)", ylabel = "Temperature (K)", x
 lines!(ax, latitude[1:96], latitude_mean, color = :purple, label = "data")
 band!(ax, latitude[1:96], latitude_mean .- 3 * latitude_std, latitude_mean .+ 3 * latitude_std, color = (:purple, 0.2))
 ylims!(ax, 220, 310)
-ax = Axis(ga[1,2]; title = "Zonal Average (Model)", xlabel = "Latitude")
+ax = Axis(ga[1,2]; title = "Zonal Average (Emulator)", xlabel = "Latitude")
 lines!(ax, latitude[1:96], μs, color = :blue, label = "data")
 band!(ax, latitude[1:96], μs .- 3 * σs, μs .+ 3 * σs, color = (:blue, 0.2))
 ylims!(ax, 220, 310)
@@ -423,8 +423,8 @@ for (i, lat_index) in enumerate([1, 24, 48, 72, 96])
     μ = μs[lat_index]
     x = range(μ - 4σ, μ + 4σ, length = 100)
     y = gaussian.(x, μ, σ)
-    hist!(ax, global_mean_field[lat_index, :, :][:], bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "data")
-    lines!(ax, x, y, color = :blue, label = "emulator")
+    hist!(ax, global_mean_field[lat_index, :, :][:], bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
+    lines!(ax, x, y, color = :blue, label = "Emulator")
     if i == 1
         axislegend(ax, position = :lt)
     end
