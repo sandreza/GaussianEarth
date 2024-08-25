@@ -249,8 +249,8 @@ function emulator_mean_variance_linear_functionals(observables, emulator::Gaussi
         observable_basis = [observable(emulator.basis[:, j]) for j in 1:modes]
         σ = sqrt(observable_basis' * (Σ * observable_basis)) 
         μ = mean_modes' * observable_basis
-        μs[i] = μ
-        σs[i] = σ
+        μs[i] = Float32(μ)
+        σs[i] = Float32(σ)
     end
     return μs, σs
 end
