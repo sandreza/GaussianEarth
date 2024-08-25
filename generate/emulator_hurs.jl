@@ -11,7 +11,7 @@ current_path = joinpath(data_directory, scenario_directories[1])
 variable_directories = readdir(current_path)
 
 ##
-field = "tas"
+field = "hurs"
 covsave = h5open(save_directory * field * "_covariances_model.hdf5", "r")
 Ls = []
 for month in 1:12
@@ -44,8 +44,8 @@ hfile["scale factor"] = 273
 close(hfile)
 
 ##
-emulator = GaussianEmulator(μmodel, Lmodel, basis)
-mean_field = mean(emulator)
-variance_field = variance(emulator)
-mean_modes = mode_mean(emulator)
-variance_modes = mode_variance(emulator)
+emulator_hurs = GaussianEmulator(μmodel, Lmodel, basis)
+mean_field = mean(emulator_hurs)
+variance_field = variance(emulator_hurs)
+mean_modes = mode_mean(emulator_hurs)
+variance_modes = mode_variance(emulator_hurs)
