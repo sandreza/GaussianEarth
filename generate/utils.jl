@@ -203,6 +203,21 @@ function mean(emulator::GaussianEmulator; modes = 1000)
     return ensemble_mean
 end
 
+function rand(emulator::GaussianEmulator; modes = 1000)
+    M, N = size(emulator.basis)
+    month = emulator.month[1]
+    global_mean_temperature = emulator.global_mean_temperature[1]
+    μ = emulator.mean[1:modes, 1, month] .+ emulator.mean[1:modes, 2, month]* global_mean_temperature
+    L = emulator.decomposition[:, :, 1, month] + emulator.decomposition[:, :, 2, month]*global_mean_temperature
+    Σ = (L' * L)[1:modes, 1:modes]
+    a = rand(MvNormal(μ, Σ))
+    realization = zeros(Float32, M)
+    for i in 1:modes
+        realization .+= emulator.basis[:, i] * a[i]
+    end
+    return realization
+end
+
 function mode_mean(emulator; modes = 1000)
     global_mean_temperature = emulator.global_mean_temperature[1]
     month = emulator.month[1]
