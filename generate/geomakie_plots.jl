@@ -15,7 +15,7 @@ include("emulator_hurs.jl")
 tas_fields = []
 hurs_fields = []
 temperatures = []
-scenarios = ["historical"]
+scenarios = ["historical", "ssp585", "ssp119", "ssp245"]
 for scenario in scenarios
     historical_tas = common_array(scenario, "tas"; ensemble_members = 45)
     historical_hurs = common_array(scenario, "hurs"; ensemble_members = 29)
@@ -61,9 +61,10 @@ for scenario_index in ProgressBar(eachindex(scenarios))
 end
 
 ##
+scenario_index = 1
 fig = Figure(resolution = (1000, 1000))
 ax = GeoAxis(fig[1,1])
-surface!(ax, longitude, latitude, model_truth_error_weighted; colormap = :plasma, shading = NoShading)
+surface!(ax, longitude, latitude, model_truth_error_weighted[:, :, scenario_index]; colormap = :plasma, shading = NoShading)
 save("model_truth_error_weighted.png", fig)
 ##
 nlongitude = range(-180, 180, length = 192)
@@ -148,16 +149,16 @@ scenario_index = 1
 ax = GeoAxis(fig[1,1]; title = "Historical")
 field = model_truth_error_hurs[:, :, scenario_index]
 shifted_field = circshift(field, (96, 0))
-surface!(ax2, nlongitude, latitude, shifted_field; colormap = :plasma, colorrange = (0, 2), shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = :plasma, colorrange = (0, 2), shading = NoShading)
 scenario_index = 2
 ax = GeoAxis(fig[1,2]; title = "SSP585")
 field = model_truth_error_hurs[:, :, scenario_index]
 shifted_field = circshift(field, (96, 0))
-surface!(ax2, nlongitude, latitude, shifted_field; colormap = :plasma, colorrange = (0, 2), shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = :plasma, colorrange = (0, 2), shading = NoShading)
 scenario_index = 3
 ax = GeoAxis(fig[1,3]; title = "SSP119")
 field = model_truth_error_hurs[:, :, scenario_index]
 shifted_field = circshift(field, (96, 0))
-surface!(ax2, nlongitude, latitude, shifted_field; colormap = :plasma, colorrange = (0, 2), shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = :plasma, colorrange = (0, 2), shading = NoShading)
 Colorbar(fig[1,4], colormap=:plasma, colorrange=(0, 2), height = Relative(2/4), label = "Relative Humidity Error (%)")
 save("model_truth_error_unweighted_scenarios_hurs.png", fig)
