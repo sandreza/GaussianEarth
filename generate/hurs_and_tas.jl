@@ -334,7 +334,7 @@ for i in eachindex(observables)
     hurs_hist = [observables[i](rfield[:, j]) for j in 1:29*increment]
     hist!(ax1, tas_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf, label = "2050 (Data)")
     hist!(ax2, hurs_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf, label = "2050 (Data)")
-    if i == 1
+    if i == 5
         axislegend(ax2, position = :lt)
     end
 end

@@ -5,8 +5,10 @@ xls = 40
 yls = 40
 tls = 40
 legend_ls = 35
-resolution = (1800, 600)
-common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
+xlp = 15 
+ylp = 15 
+resolution = (1800, 600) .* 2
+common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls, xlabelpadding = xlp, ylabelpadding = ylp)
 
 if process_data 
     field_name = "tas"
@@ -33,7 +35,6 @@ if process_data
     emulated_truth = zeros(Float32, 192, 96)
     truth = zeros(Float32, 192, 96)
     emulated_truth_truth_error = zeros(Float32, 192, 96, length(scenarios))
-    emulated_truth_truth_error_weighted = zeros(Float32, 192, 96, length(scenarios))
 
     for scenario_index in ProgressBar(eachindex(scenarios))
         for year in ProgressBar(eachindex(temperatures[scenario_index]))
@@ -45,7 +46,6 @@ if process_data
                 emulated_truth .= reshape(mean(emulator), 192, 96)
                 truth .= mean(tas_fields[scenario_index][:, :, year, month, :], dims=3)[:,:, 1]
                 emulated_truth_truth_error[:, :, scenario_index] .+= abs.(emulated_truth .- truth) / ( N * 12)
-                emulated_truth_truth_error_weighted[:, :, scenario_index] .+= sqrt.(((abs.(emulated_truth .- truth) ).^2) .* metric) / ( N * 12)
             end
         end
     end
@@ -70,5 +70,5 @@ ax = GeoAxis(fig[1,3]; title = "SSP1-1.9", common_options...)
 field = emulated_truth_truth_error[:, :, scenario_index]
 shifted_field = circshift(field, (96, 0))
 surface!(ax, nlongitude, latitude, shifted_field; colormap = :afmhot, colorrange = (0, 1), shading = NoShading)
-Colorbar(fig[1,4], colormap=:afmhot, colorrange=(0, 1), height = Relative(2/4), label = "Temperature Error (K)")
+Colorbar(fig[1,4], colormap=:afmhot, colorrange=(0, 1), height = Relative(2/4), label = "Temperature Error (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
 save(figure_directory * "emulated_truth_truth_error_unweighted_scenarios_tas.png", fig)
