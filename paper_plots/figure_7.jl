@@ -3,9 +3,14 @@ xls = 40
 yls = 40
 tls = 40
 legend_ls = 35
-resolution = (1800, 600)
+resolution = (300, 140) .* 9
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
-
+ts = 40
+xls = 40 
+yls = 40
+tls = 40
+legend_ls = 35
+common_options_2 = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 if process_data
     month = 1
     field = "tas"
@@ -48,12 +53,33 @@ if process_data
     μs = [mean_modes' * global_mean_basis[i, :] for i in 1:96]
 end
 
+##
 fig = Figure(; resolution) 
-ax = Axis(fig[1,1]; title = "Latitude Mean and Variance (Data)", xlabel = "Latitude", ylabel = "Temperature (K)", common_options...)
+ga = fig[1, 1] = GridLayout()
+ax = Axis(ga[1,1]; title = "Zonal Average (Data)", ylabel = "Temperature (K)", xlabel = "Latitude", common_options...)
 lines!(ax, latitude[1:96], latitude_mean, color = :purple, label = "data")
 band!(ax, latitude[1:96], latitude_mean .- 3 * latitude_std, latitude_mean .+ 3 * latitude_std, color = (:purple, 0.2))
-ax = Axis(fig[1,2]; title = "Latitude Mean and Variance (Emulator)", xlabel = "Latitude", ylabel = "Temperature (K)", common_options...)
+ylims!(ax, 220, 310)
+ax = Axis(ga[1,2]; title = "Zonal Average (Emulator)", xlabel = "Latitude", common_options...)
 lines!(ax, latitude[1:96], μs, color = :blue, label = "data")
 band!(ax, latitude[1:96], μs .- 3 * σs, μs .+ 3 * σs, color = (:blue, 0.2))
-display(fig)
-save(figure_directory * "latitude_mean_model_emulator.png", fig)
+ylims!(ax, 220, 310)
+gb = fig[2, 1] = GridLayout()
+for (i, lat_index) in enumerate([1, 24, 48, 72, 96])
+    latitude_string = @sprintf("Latitude %.2f", latitude[lat_index])
+    if i == 1
+        ax = Axis(gb[1,i]; xlabel = "Temperature (K)", ylabel = "Probability Density", title = latitude_string, common_options_2...)
+    else
+        ax = Axis(gb[1,i]; xlabel = "Temperature (K)", title = latitude_string, common_options_2...)
+    end
+    σ = σs[lat_index]
+    μ = μs[lat_index]
+    x = range(μ - 4σ, μ + 4σ, length = 100)
+    y = gaussian.(x, μ, σ)
+    hist!(ax, global_mean_field[lat_index, :, :][:], bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
+    lines!(ax, x, y, color = :blue, label = "Emulator")
+    if i == 1
+        axislegend(ax, position = :lt, labelsize = legend_ls)
+    end
+end
+save(figure_directory * "latitude_mean_model_emulator_locations_together.png", fig)
