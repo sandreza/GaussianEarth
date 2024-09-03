@@ -1,13 +1,13 @@
 using GeoMakie 
 
-ts = 40
-xls = 40 
-yls = 40
-tls = 40
-legend_ls = 35
-xlp = 15 
-ylp = 15 
-resolution = (1800, 600) .* 2
+ts = 60
+xls = 60 
+yls = 60
+tls = 60
+legend_ls = 60
+xlp = 20 
+ylp = 20 
+resolution = (1800, 1200) .* 2
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls, xlabelpadding = xlp, ylabelpadding = ylp)
 
 if process_data 
@@ -58,23 +58,25 @@ scenario_index = 1
 ax = GeoAxis(fig[1,1]; title = "Historical", common_options...)
 field = emulated_truth_truth_error[:, :, scenario_index]
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = :afmhot, colorrange = (0, 1), shading = NoShading)
-
+surface!(ax, nlongitude, latitude, shifted_field; colormap = :plasma, colorrange = (0, 1), shading = NoShading)
+hidedecorations!(ax)
 scenario_index = 2 
 ax = GeoAxis(fig[1,2]; title = "SSP5-8.5", common_options...)
 field = emulated_truth_truth_error[:, :, scenario_index]
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = :afmhot, colorrange = (0, 1), shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = :plasma, colorrange = (0, 1), shading = NoShading)
+hidedecorations!(ax)
 scenario_index = 3
 ax = GeoAxis(fig[2,1]; title = "SSP1-1.9", common_options...)
 field = emulated_truth_truth_error[:, :, scenario_index]
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = :afmhot, colorrange = (0, 1), shading = NoShading)
-Colorbar(fig[1,4], colormap=:afmhot, colorrange=(0, 1), height = Relative(2/4), label = "Temperature Error (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = :plasma, colorrange = (0, 1), shading = NoShading)
+hidedecorations!(ax)
 scenario_index = 4
 ax = GeoAxis(fig[2,2]; title = "SSP2-4.5", common_options...)
 field = emulated_truth_truth_error[:, :, scenario_index]
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = :afmhot, colorrange = (0, 1), shading = NoShading)
-Colorbar(fig[1,4], colormap=:afmhot, colorrange=(0, 1), height = Relative(2/4), label = "Temperature Error (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = :plasma, colorrange = (0, 1), shading = NoShading)
+Colorbar(fig[1:2,3], colormap=:plasma, colorrange=(0, 1), height = Relative(2/4), label = "Temperature Error (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
+hidedecorations!(ax)
 save(figure_directory * "emulated_truth_truth_error_unweighted_scenarios_tas.png", fig)

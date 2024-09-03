@@ -5,6 +5,7 @@ tls = 40
 legend_ls = 35
 resolution = (1800, 600)
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
+linewidth = 5
 
 include("utils.jl")
 ##
@@ -15,8 +16,8 @@ current_path = joinpath(data_directory, scenario_directories[1])
 variable_directories = readdir(current_path)
 ##
 field_name = "tas" 
+colors = [:red4, :red, :indigo, :magenta3]
 if process_data
-    colors = [:red4, :red, :indigo, :magenta3]
     hfile = h5open(save_directory * field_name * "_basis.hdf5", "r")
     latitude = read(hfile["latitude"])
     longitude = read(hfile["longitude"])
@@ -86,7 +87,7 @@ ax = Axis(fig_tas[1,1]; title = "Pattern Scaling", xlabel = "Year", ylabel = "Te
 for (i, field) in enumerate(fields)
     Ts = temperatures[i]
     error_list = [norm((field[:, :, j] .- (linear_fit_yearly[:, :, 1] .+ Ts[j] * linear_fit_yearly[:, :, 2]))[:] .* sqrt_f_metric) for j in eachindex(Ts)]
-    lines!(ax, ts[i], error_list, label = scenario_names[i], color = colors[i])
+    lines!(ax, ts[i], error_list, label = scenario_names[i], color = colors[i], linewidth = linewidth)
     xlims!(ax, xrange...)
     ylims!(ax, yrange...)
 end
@@ -96,7 +97,7 @@ ax = Axis(fig_tas[1,4]; title = "10 Modes", xlabel = "Year", common_options...)
 for (i, field) in enumerate(fields)
     Ts = temperatures[i]
     error_list10 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model10[:, 1] .+ Ts[j] * eof_model10[:, 2]) )[:] .* sqrt_f_metric) for j in eachindex(Ts)]
-    lines!(ax, ts[i], error_list10, label = scenario_names[i] * " 10 modes", color = colors[i])
+    lines!(ax, ts[i], error_list10, label = scenario_names[i] * " 10 modes", color = colors[i], linewidth = linewidth)
     xlims!(ax, xrange...)
     ylims!(ax, yrange...)
 end
@@ -106,7 +107,7 @@ ax = Axis(fig_tas[1,3]; title = "100 Modes", xlabel = "Year", common_options...)
 for (i, field) in enumerate(fields)
     Ts = temperatures[i]
     error_list100 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model100[:, 1] .+ Ts[j] * eof_model100[:, 2]) )[:] .* sqrt_f_metric) for j in eachindex(Ts)]
-    lines!(ax, ts[i], error_list100, label = scenario_names[i] * " 100 modes", color = colors[i])
+    lines!(ax, ts[i], error_list100, label = scenario_names[i] * " 100 modes", color = colors[i], linewidth = linewidth)
     xlims!(ax, xrange...)
     ylims!(ax, yrange...)
 end
@@ -116,7 +117,7 @@ ax = Axis(fig_tas[1,2]; title = "1000 Modes", xlabel = "Year", common_options...
 for (i, field) in enumerate(fields)
     Ts = temperatures[i]
     error_list1000 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model1000[:, 1] .+ Ts[j] * eof_model1000[:, 2]) )[:] .* sqrt_f_metric) for j in eachindex(Ts)]
-    lines!(ax, ts[i], error_list1000, label = scenario_names[i] * " 1000 modes", color = colors[i])
+    lines!(ax, ts[i], error_list1000, label = scenario_names[i] * " 1000 modes", color = colors[i], linewidth = linewidth)
     xlims!(ax, xrange...)
     ylims!(ax, yrange...)
 end

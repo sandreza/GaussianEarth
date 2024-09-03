@@ -1,13 +1,13 @@
 using GeoMakie 
 
-ts = 40
-xls = 40 
-yls = 40
-tls = 40
-legend_ls = 35
-xlp = 15 
-ylp = 15 
-resolution = (1800, 600) .* 2
+ts = 60
+xls = 60 
+yls = 60
+tls = 60
+legend_ls = 60
+xlp = 20 
+ylp = 20 
+resolution = (1800, 1200) .* 2
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls, xlabelpadding = xlp, ylabelpadding = ylp)
 
 if process_data
@@ -53,20 +53,30 @@ data_realization = tas_fields[1][:, :, year_index, month_index, 1] - mean(tas_fi
 nlongitude = range(-180, 180, length = 192)
 ndata_realization = circshift(data_realization, (96, 0))
 surface!(ax, nlongitude, latitude, ndata_realization; colormap = colormap, colorrange = crange, shading = NoShading)
-ax = GeoAxis(fig[1,2]; title = "1850 January (Data Realization)", common_options...)
+hidedecorations!(ax)
+
+month_index = 7
+ax = GeoAxis(fig[2, 1]; title = "1850 July (Data Realization)", common_options...)
 data_realization = tas_fields[1][:, :, year_index, month_index, 2]  - mean(tas_fields[1][:, :, year_index, month_index, :] , dims = 3)[:, :, 1]
 ndata_realization = circshift(data_realization, (96, 0))
 surface!(ax, nlongitude, latitude, ndata_realization; colormap = colormap, colorrange = crange, shading = NoShading)
+hidedecorations!(ax)
 
-ax2 = GeoAxis(fig[1,3]; title = "1850 January (Emulator Realization)", common_options...)
-emulator_realization = rand(emulator) - emulator_mean
+
+ax2 = GeoAxis(fig[1, 2]; title = "1850 January (Emulator Realization)", common_options...)
+emulator_realization = rand(emulator) - mean(emulator)
 r_emulator_realization = reshape(emulator_realization, (192, 96))
 nemulator_realization = circshift(r_emulator_realization, (96, 0))
 surface!(ax2, nlongitude, latitude, nemulator_realization; colormap = colormap, colorrange = crange, shading = NoShading)
-ax2 = GeoAxis(fig[1,4]; title = "1850 January (Emulator Realization)", common_options...)
-emulator_realization = rand(emulator) - emulator_mean
+hidedecorations!(ax2)
+
+month_index = 7
+emulator.month[1] = month_index
+ax2 = GeoAxis(fig[2,2]; title = "1850 July (Emulator Realization)", common_options...)
+emulator_realization = rand(emulator) - mean(emulator)
 r_emulator_realization = reshape(emulator_realization, (192, 96))
 nemulator_realization = circshift(r_emulator_realization, (96, 0))
 surface!(ax2, nlongitude, latitude, nemulator_realization; colormap = colormap, colorrange = crange, shading = NoShading)
-Colorbar(fig[1,5], label = "Temperature Anomaly (K)", colorrange = crange, colormap = colormap, height = Relative(1/3), labelsize = legend_ls, ticklabelsize = legend_ls)
+Colorbar(fig[1:2,3], label = "Temperature Fluctuation (K)", colorrange = crange, colormap = colormap, height = Relative(2/4), labelsize = legend_ls, ticklabelsize = legend_ls)
+hidedecorations!(ax2)
 save(figure_directory * "tas_realization_comparison.png", fig)
