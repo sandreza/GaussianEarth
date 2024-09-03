@@ -1,5 +1,5 @@
 figure_directory = "figures/"
-process_data = true
+process_data = false
 
 using CairoMakie, Printf, GeoMakie
 using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
@@ -18,5 +18,6 @@ include("figure_5.jl")
 # include("figure_6.jl")
 # include("figure_7.jl")
 # include("figure_8.jl")
-# include("figure_9.jl")
-# include("figure_10.jl")
+# include("figure_9_redux.jl")
+# include("figure_10_redux.jl")
+# include("parametric_assumption_redux.jl")
