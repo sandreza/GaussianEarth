@@ -1,7 +1,7 @@
-using NCDatasets, CairoMakie
+using NCDatasets, CairoMakie, HDF5
 
 # Load the land-sea mask
-filename = "IMERG_land_sea_mask.nc"
+filename = "/net/fs06/d3/sandre/GaussianEarthData/IMERG_land_sea_mask.nc"
 ds = Dataset(filename)
 mask = ds["landseamask"][:, :]
 
@@ -25,3 +25,7 @@ save("land_sea_mask.png", fig)
 display(fig)
 
 mpi_mask = subsampled_mask .> 90
+
+hfile = h5open("/net/fs06/d3/sandre/GaussianEarthData/land_sea_mask.hdf5", "w")
+hfile["mask"] = mpi_mask * 1.0
+close(hfile)

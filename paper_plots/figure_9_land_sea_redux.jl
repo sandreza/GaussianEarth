@@ -52,6 +52,12 @@ function global_mean_lower(field)
     global_mean_value_lower = sum(reshape(field .* fmetric, (192, 96))[:, 1:48, :], dims = (1, 2)) * 2
     return global_mean_value_lower[1]
 end
+function land_average(field)
+    return sum((field .* fmetric) .* mask[:]) / sum(mask[:] .* fmetric)
+end
+function sea_average(field)
+    return sum((field .* fmetric) .* .!mask[:]) / sum(.!mask[:] .* fmetric)
+end
 
 index_1 = [157, 46]
 index_2 = [54, 48]
@@ -76,7 +82,7 @@ min_temp = minimum(temperatures) # 1.0544952f0
 max_temp = maximum(temperatures) # 1.0720718f0
 month = 1
 ##
-observables = [global_mean_upper, global_mean_lower]
+observables = [land_average, sea_average]
 ##
 if process_data
     historical_tas = common_array("historical", "tas"; ensemble_members = 45)
@@ -96,7 +102,7 @@ window = 2
 increment = 2 * window + 1
 month = 1
 fig = Figure(; resolution)
-observable_names = ["Global Upper Hemisphere Mean (Jan)", "Global Lower Hemisphere Mean (Jan)"]
+observable_names = ["Land Average (Jan)", "Ocean Average (Jan)"]
 for i in eachindex(observables)
     emulator.month[1] = month
     emulator.global_mean_temperature[1] = min_temp
@@ -145,12 +151,12 @@ for i in eachindex(observables)
     hist!(ax2, hurs_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf, label = "2050 (Data)")
     if i == 1
         axislegend(ax2, position = :lt, labelsize = legend_ls)
-        xlims!(ax2, 73, 80)
+        xlims!(ax2, 78.0, 80.5)
     end
 end
 
 month = 7
-observable_names = ["Global Upper Hemisphere Mean (Jul)", "Global Lower Hemisphere Mean (Jul)"]
+observable_names = ["Land Average (Jul)", "Ocean Average (Jul)"]
 for i in eachindex(observables)
     emulator.month[1] = month
     emulator.global_mean_temperature[1] = min_temp
@@ -197,4 +203,27 @@ end
 
 display(fig)
 
-save(figure_directory * "climate_change_shifts_hurs_tas_with_data_jan_july.png", fig)
+save(figure_directory * "climate_change_shifts_hurs_tas_with_data_jan_july_land_sea.png", fig)
+
+
+##
+
+field = zeros(Float32, 192, 96)
+fielddiff = zeros(Float32, 192, 96)
+for i in 1:12
+    emulator.month[1] = i
+    emulator.global_mean_temperature[1] = min_temp
+    fieldmin = reshape(mean(emulator), 192, 96) / 12
+    field .+= fieldmin
+    emulator.global_mean_temperature[1] = max_temp
+    fieldmax = reshape(mean(emulator), 192, 96) / 12
+    fielddiff .+= fieldmax .- fieldmin
+end
+fig = Figure() 
+ax = Axis(fig[1, 1])
+heatmap!(ax, field, colormap = :viridis)
+contour!(ax, mask, color = :black)
+ax = Axis(fig[1, 2])
+heatmap!(ax, fielddiff, colormap = :viridis, colorrange = (0, 4))
+contour!(ax, mask, color = :black)
+save(figure_directory * "emulated_global_mean_tas_with_mask.png", fig)
