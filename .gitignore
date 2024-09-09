@@ -21,3 +21,4 @@ docs/site/
 *.vscode*
 *.png*
 *tmp*
+*.nc*
