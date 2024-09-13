@@ -26,6 +26,20 @@ display(fig)
 
 mpi_mask = subsampled_mask .> 90
 
+##
+filename = "/net/fs06/d3/sandre/GaussianEarthData/sftlf050_fx_MPI-ESM1-2-LR_piControl_r1i1p1f1_native.nc"
+ds = Dataset(filename)
+mask = ds["mask"][:, :]
+close(ds)
+
 hfile = h5open("/net/fs06/d3/sandre/GaussianEarthData/land_sea_mask.hdf5", "w")
-hfile["mask"] = mpi_mask * 1.0
+hfile["mask"] = Float32.(mask)
 close(hfile)
+
+#=
+fig = Figure()
+ax = Axis(fig[1, 1])
+heatmap!(ax, mask * 1.0, colormap = :balance)
+save("mpi_land_sea_mask.png", fig)
+display(fig)
+=#

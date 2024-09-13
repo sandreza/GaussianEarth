@@ -122,7 +122,7 @@ for i in eachindex(observables)
 end
 
 observables = [global_mean_upper, global_mean_lower]
-observable_names_base = ["Global Upper Hemisphere Mean ", "Global Lower Hemisphere Mean "]
+observable_names_base = ["Northern Hemisphere Mean ", "Southern Hemisphere Mean "]
 observable_names = observable_names_base .* ["(Jan)"]
 for i in eachindex(observables)
     emulator.month[1] = month
@@ -172,7 +172,7 @@ for i in eachindex(observables)
 end
 
 observables = [global_mean_upper, global_mean_lower]
-observable_names_base = ["Global Upper Hemisphere Mean ", "Global Lower Hemisphere Mean "]
+observable_names_base = ["Northern Hemisphere Mean ", "Southern Hemisphere Mean "]
 observable_names = observable_names_base .* ["(Jul)"]
 for i in eachindex(observables)
     emulator.month[1] = month

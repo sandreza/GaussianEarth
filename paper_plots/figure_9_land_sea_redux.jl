@@ -52,10 +52,10 @@ function global_mean_lower(field)
     global_mean_value_lower = sum(reshape(field .* fmetric, (192, 96))[:, 1:48, :], dims = (1, 2)) * 2
     return global_mean_value_lower[1]
 end
-function land_average(field)
+function sea_average(field)
     return sum((field .* fmetric) .* mask[:]) / sum(mask[:] .* fmetric)
 end
-function sea_average(field)
+function land_average(field)
     return sum((field .* fmetric) .* .!mask[:]) / sum(.!mask[:] .* fmetric)
 end
 
@@ -151,7 +151,7 @@ for i in eachindex(observables)
     hist!(ax2, hurs_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf, label = "2050 (Data)")
     if i == 1
         axislegend(ax2, position = :lt, labelsize = legend_ls)
-        xlims!(ax2, 78.0, 80.5)
+        xlims!(ax2, 70.0, 78.5)
     end
 end
 
