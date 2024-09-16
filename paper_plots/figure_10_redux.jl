@@ -52,6 +52,7 @@ end
 index_1 = [157, 46]
 index_2 = [54, 48]
 index_3 = [19, 87]
+
 function location_1(field)
     rfield = reshape(field, (192, 96))
     return rfield[157, 46]
@@ -92,7 +93,7 @@ window = 2
 increment = 2 * window + 1
 month = 1
 fig = Figure(; resolution)
-observable_names_base = [@sprintf("%.2fᵒ, %.2fᵒ ", tmp[1], tmp[2]) for tmp in [index_1, index_2, index_3]]
+observable_names_base = [@sprintf("%.2fᵒ, %.2fᵒ ", longitude[tmp[1]], latitude[tmp[2]]) for tmp in [index_1, index_2, index_3]]
 observable_names = observable_names_base .* ["(Jan)"]
 for i in eachindex(observables)
     emulator.month[1] = month
@@ -146,7 +147,7 @@ for i in eachindex(observables)
 end
 
 month = 7
-observable_names_base = [@sprintf("%.2fᵒ, %.2fᵒ ", tmp[1], tmp[2]) for tmp in [index_1, index_2, index_3]]
+observable_names_base = [@sprintf("%.2fᵒ, %.2fᵒ ", longitude[tmp[1]], latitude[tmp[2]]) for tmp in [index_1, index_2, index_3]]
 observable_names = observable_names_base .* ["(Jul)"]
 for i in eachindex(observables)
     emulator.month[1] = month

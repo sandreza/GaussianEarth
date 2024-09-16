@@ -95,7 +95,7 @@ ts[indmin], ts[indmax]
 
 month = 1
 fig = Figure(; resolution)
-observable_names_base = [@sprintf("%.2fᵒ, %.2fᵒ ", tmp[1], tmp[2]) for tmp in [index_1, index_2, index_3]]
+observable_names_base = [@sprintf("%.2fᵒ, %.2fᵒ ", longitude[tmp[1]], latitude[tmp[2]]) for tmp in [index_1, index_2, index_3]]
 observable_names = observable_names_base .* ["(Jan)"]
 for i in eachindex(observables)
     emulator.month[1] = month
@@ -203,7 +203,7 @@ month = 1
 fig = Figure(; resolution)
 
 observables = [location_1, location_2, location_3]
-observable_names_base = [@sprintf("%.2fᵒ, %.2fᵒ ", tmp[1], tmp[2]) for tmp in [index_1, index_2, index_3]]
+observable_names_base = [@sprintf("%.2fᵒ, %.2fᵒ ", longitude[tmp[1]], latitude[tmp[2]]) for tmp in [index_1, index_2, index_3]]
 observable_names = observable_names_base .* ["(Jan)"]
 for i in eachindex(observables)
     emulator.month[1] = month
