@@ -1,4 +1,4 @@
-figure_directory = "figures/"
+figure_directory = "./figures/"
 process_data = true
 
 using CairoMakie, Printf, GeoMakie
@@ -11,13 +11,28 @@ scenario_directories = readdir(data_directory)
 current_path = joinpath(data_directory, scenario_directories[1])
 variable_directories = readdir(current_path)
 
-# include("figure_2.jl")
-# include("figure_3.jl")
-# include("figure_4.jl")
-# include("figure_5.jl")
-# include("figure_6.jl")
-# include("figure_7.jl")
-# include("figure_8.jl")
-# include("figure_9_land_sea_redux.jl")
+include("utils.jl")
+
+#load in saved out tas emulator
+field = "tas"
+hfile = h5open(save_directory * field * "_gaussian_model.hdf5", "r")
+μmodel = read(hfile["mean"])
+Lmodel = read(hfile["L model"])
+basis = read(hfile["basis"])
+close(hfile)
+emulator = GaussianEmulator(μmodel, Lmodel, basis)
+mean_field = mean(emulator)
+variance_field = variance(emulator)
+mean_modes = mode_mean(emulator)
+variance_modes = mode_variance(emulator)
+
+include("figure_2.jl")
+include("figure_3.jl")
+include("figure_4.jl")
+include("figure_5.jl")
+include("figure_6.jl")
+include("figure_7.jl")
+include("figure_8.jl")
+include("figure_9_land_sea_redux.jl")
 include("figure_10_redux.jl")
 include("parametric_assumption_redux.jl")

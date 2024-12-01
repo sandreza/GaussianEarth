@@ -121,7 +121,7 @@ function common_array(scenario, variable; data_directory = "/net/fs06/d3/mgeo/CM
     return all_together
 end
 
-function ensemble_averaging(scenario, variable; data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/", ensemble_members = 45)
+function ensemble_averaging(scenario, variable; data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/", ensemble_members = 45, return_std=false) #added option for std
     current_path = joinpath(data_directory, scenario)
     local_current_path = joinpath(current_path, variable)
     file_names = readdir(local_current_path)
@@ -144,7 +144,11 @@ function ensemble_averaging(scenario, variable; data_directory = "/net/fs06/d3/m
             @inbounds all_together[:,:, 1:monthtime1, month, ω] .= fields[ω][:, :, month:12:end]
         end
     end
-    return mean(all_together, dims = 5)[:,:,:,:,1], mean(all_together, dims = (4, 5))[:,:,:,1, 1]
+    if return_std
+        return std(all_together, dims = 5)[:,:,:,:,1], mean(std(all_together, dims =4)[:,:,:,:, 1], dims=4)[:,:,:,1]
+    else
+        return mean(all_together, dims = 5)[:,:,:,:,1], mean(all_together, dims = (4, 5))[:,:,:,1, 1]
+    end
 end
 
 # computing statistics 
@@ -185,7 +189,7 @@ function GaussianEmulator(data_directory; modes = 1000)
     decomposition = read(hfile["L model"])[1:modes, 1:modes, :, :]
     basis = read(hfile["basis"])[:, 1:modes]
     close(hfile)
-    return GaussianEmulator(mean, decomposition, basis, [1], [1.0555532f0])
+    return GaussianEmulator(mean, decomposition, basis, [1], [1.0555532f0]) #why these numbers??
 end
 
 function GaussianEmulator(μmodel, Lmodel, basis)
@@ -247,9 +251,13 @@ function variance(emulator::GaussianEmulator; modes = 1000)
     return variance_field
 end
 
-function emulator_variance(emulator::GaussianEmulator; modes = 1000)
-    global_mean_temperature = emulator.global_mean_temperature[1]
-    month = emulator.month[1]
+function emulator_variance(emulator::GaussianEmulator; modes = 1000, month = nothing, global_mean_temperature = nothing)
+    if isnothing(global_mean_temperature)
+        global_mean_temperature = emulator.global_mean_temperature[1]
+    end
+    if isnothing(month)
+        month = emulator.month[1]
+    end
     L = emulator.decomposition[:, :, 1, month] + emulator.decomposition[:, :, 2, month]*global_mean_temperature
     Σ = (L' * L)[1:modes, 1:modes]
     return Σ
