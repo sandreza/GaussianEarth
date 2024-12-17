@@ -1,71 +1,18 @@
 #### start by essentially repeating emulator.jl from paper_plots
-figure_directory = "./figures/"
-include("utils.jl")
-##
-save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
-data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
-scenario_directories = readdir(data_directory)
-current_path = joinpath(data_directory, scenario_directories[1])
-variable_directories = readdir(current_path)
-##
+
 field_name = "tas" 
 colors = [:red4, :red, :indigo, :magenta3]
-process_data=true
-
-## !!! will need to standardize how guassian_emulator is saved to separately save different orders of fit # probably just add a \mumodel_2 variable
-
 field = "tas"
 
-# create quadratic emulator
-rC = []
-hfile = h5open("./figures/" * field * "_mean_regression_quadratic.hdf5", "r") 
-for month in 1:12
-    regression_coefficients = read(hfile["regression_coefficients $month"])
-    push!(rC, regression_coefficients)
-end
-close(hfile)
-
-hfile = h5open(save_directory * field * "_basis.hdf5", "r")
-basis = read(hfile["basis"] )
-close(hfile)
-
-covsave = h5open(save_directory * field * "_covariances_model.hdf5", "r")
-Ls = []
-for month in 1:12
-    L = read(covsave["L" * "$month"])
-    push!(Ls, L)
-end
-close(covsave)
-
-hfile = h5open("./figures/" * field * "_gaussian_model_quadratic.hdf5", "w") # CHANGE THIS to be the save_directory
-Lmodel = zeros(Float32, size(Ls[1])..., 12)
-[Lmodel[:, :, :, i] .= Ls[i] for i in 1:12]
-μmodel = zeros(Float32, size(rC[1])..., 12)
-[μmodel[:, :, i] .= rC[i] for i in 1:12]
-hfile["mean"] = μmodel
-hfile["L model"] = Lmodel
-hfile["basis"] = basis
-hfile["scale factor"] = 273 
-close(hfile)
-
-##### 
-# load in saved out quadratic emulator
-hfile = h5open("./figures/" * field * "_gaussian_model_quadratic.hdf5", "r")
-μmodel = read(hfile["mean"])
-Lmodel = read(hfile["L model"])
-basis = read(hfile["basis"])
-close(hfile)
-quadratic_emulator = GaussianEmulator(μmodel, Lmodel, basis)
-
-#load in saved out linear emulator
+####
+#load in saved out emulators -- might be unnecessary 
 hfile = h5open(save_directory * field * "_gaussian_model.hdf5", "r")
 μmodel = read(hfile["mean"])
+μmodel_quadratic = read(hfile["mean_quadratic"])
 Lmodel = read(hfile["L model"])
 basis = read(hfile["basis"])
 close(hfile)
 emulator = GaussianEmulator(μmodel, Lmodel, basis)
-
-
 
 # now we have emulator and quadratic emulator, can do the error comparison
 
@@ -158,13 +105,45 @@ if process_data
 end
 
 
+##
+if process_data
+    scale_factor = 273
+    month = 1 # this is where we set which month we're looking at (January)
+    eof_mode, temperature = concatenate_regression(field, ["historical", "ssp585"]; directory = "/net/fs06/d3/mgeo/GaussianEarthData")
+    eofs = eof_mode[:,month:12:end, 1:45] 
+
+    hfile = h5open(save_directory * field * "_mean_regression.hdf5", "r")
+    regression_coefficients = read(hfile["regression_coefficients 1"])
+    linear_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
+    for month in ProgressBar(1:12)
+        linear_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
+    end
+    close(hfile)
+end
+
+## find most quadratic bits
+rmse_line = zeros(1000)
+rmse_quad = zeros(1000)
+for eof_index in 1:1000
+    line_fit = linear_coefficients[eof_index, 1, month] .+ linear_coefficients[eof_index, 2, month] * temperature
+    quad_fit = quadratic_coefficients[eof_index, 1, month] .+ quadratic_coefficients[eof_index, 2, month] * temperature .+ quadratic_coefficients[eof_index, 3, month] * temperature.^2
+    line_residual = eofs[eof_index, :, :] .- line_fit
+    quad_residual = eofs[eof_index, :, :] .- quad_fit
+    rmse_line[eof_index] = sqrt(mean(line_residual.^2))
+    rmse_quad[eof_index] = sqrt(mean(quad_residual.^2))
+end
+diff = rmse_line .- rmse_quad
+max_indices = sortperm(diff, rev=true)[1:3]
+
+
+
 ## make the plot
 ts = 40
 xls = 40 
 yls = 40
 tls = 40
 legend_ls = 35
-resolution = (1350, 600)
+resolution = (1600, 1200)
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 linewidth = 5
 
@@ -213,7 +192,7 @@ for (i, field) in enumerate(fields)
 end
 hideydecorations!(ax, grid = false)
 
-ax = Axis(fig_tas[1,1]; title = "1000 Modes", xlabel = "Year", common_options...)
+ax = Axis(fig_tas[1,1]; title = "1000 Modes", xlabel = "Year", ylabel="Error Difference", common_options...)
 for (i, field) in enumerate(fields)
     Ts = temperatures[i]
     error_list1000 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model1000[:, 1] .+ Ts[j] * eof_model1000[:, 2]) )[:] .* sqrt_f_metric) for j in eachindex(Ts)]
@@ -225,61 +204,24 @@ for (i, field) in enumerate(fields)
     xlims!(ax, xrange...)
     ylims!(ax, yrange...)
 end
-display(fig_tas)
+# display(fig_tas)
 
 # save(figure_directory * field_name * "_errors_diff.png", fig_tas)
 
 
 ############# find most quadratic bits
-resolution = (3000, 1000)
 
-##
-if process_data
-    scale = 273
-    month = 1 # this is where we set which month we're looking at (January)
-    eof_mode, temperature = concatenate_regression(field, ["historical", "ssp585"])
-    eofs = eof_mode[:,month:12:end, 1:45] 
+# resolution = (3000, 1000)
 
-    hfile = h5open(save_directory * field * "_mean_regression.hdf5", "r")
-    regression_coefficients = read(hfile["regression_coefficients 1"])
-    linear_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
-    for month in ProgressBar(1:12)
-        linear_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
-    end
-    close(hfile)
-end
-
-## find most quadratic bits
-rmse_line = zeros(1000)
-rmse_quad = zeros(1000)
-for eof_index in 1:1000
-    line_fit = linear_coefficients[eof_index, 1, month] .+ linear_coefficients[eof_index, 2, month] * temperature
-    quad_fit = quadratic_coefficients[eof_index, 1, month] .+ quadratic_coefficients[eof_index, 2, month] * temperature .+ quadratic_coefficients[eof_index, 3, month] * temperature.^2
-    line_residual = eofs[eof_index, :, :] .- line_fit
-    quad_residual = eofs[eof_index, :, :] .- quad_fit
-    rmse_line[eof_index] = sqrt(mean(line_residual.^2))
-    rmse_quad[eof_index] = sqrt(mean(quad_residual.^2))
-end
-diff = rmse_line .- rmse_quad
-max_indices = sortperm(diff, rev=true)[1:3]
-
-# bbfig = Figure(; resolution)
-# ax = Axis(bbfig[1,1])
-# # lines!(ax, 1:1000, rmse_line, label = "Linear", color = :blue)
-# # lines!(ax, 1:1000, rmse_quad, label = "Quadratic", color = :red)
-# lines!(ax, 1:1000, diff, label = "Difference")
-# display(bbfig)
-
-
-fig = Figure(; resolution)
-eof_index = 1
+# fig = Figure(; resolution)
 for (jj, eof_index) in enumerate(max_indices)
     if jj == 1
-        ax = Axis(fig[1,jj]; title = "Mode $eof_index", xlabel = "Temperature (K)", ylabel = "Amplitude", common_options...)
+        ax = Axis(fig_tas[2,jj]; title = "Mode $eof_index", xlabel = "Temperature (K)", ylabel = "Amplitude", common_options...)
     else
-        ax = Axis(fig[1,jj]; title = "Mode $eof_index", xlabel = "Temperature (K)", common_options...)
+        ax = Axis(fig_tas[2,jj]; title = "Mode $eof_index", xlabel = "Temperature (K)", common_options...)
     end
     month_eof = eofs[eof_index, :, :]
+    ens_means = mean(month_eof, dims = 2)
     line_fit = linear_coefficients[eof_index, 1, month] .+ linear_coefficients[eof_index, 2, month] * temperature
     quad_fit = quadratic_coefficients[eof_index, 1, month] .+ quadratic_coefficients[eof_index, 2, month] * temperature .+ quadratic_coefficients[eof_index, 3, month] * temperature.^2
     restructured = [month_eof[:, i] for i in 1:45]
@@ -290,13 +232,14 @@ for (jj, eof_index) in enumerate(max_indices)
     end
     scatter!(ax, temperature[1:2] * 273, factor * restructured[1][1:2], color = (:purple, 0.5), label = "Data")
     for i in 1:45
-        scatter!(ax, temperature * scale, factor * restructured[i], color = (:purple, 0.03))
+        scatter!(ax, temperature * scale_factor, factor * restructured[i], color = (:purple, 0.03))
     end
-    lines!(ax, temperature * scale, factor * line_fit, color = :blue, label = "Linear Emulator")
-    lines!(ax, temperature * scale, factor * quad_fit, color = :red, label = "Quadratic Emulator")
-    if jj == 1
-        axislegend(ax, position = :lt, labelsize = legend_ls)
+    scatter!(ax, temperature * scale_factor, factor * ens_means[:], color = (:black, 0.5)) # label = "Ensemble Mean"
+    lines!(ax, temperature * scale_factor, factor * line_fit, color = :blue, label = "Linear Emulator")
+    lines!(ax, temperature * scale_factor, factor * quad_fit, color = :red, label = "Quadratic Emulator")
+    if jj == 2
+        axislegend(ax, position = :rt, labelsize = legend_ls)
     end
 end
-save(figure_directory * "max_quadratic.png", fig)
-display(fig)
+save(figure_directory * "quadratic_errors.png", fig_tas)
+display(fig_tas)

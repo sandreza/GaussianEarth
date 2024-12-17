@@ -7,15 +7,6 @@ resolution = (3000, 1000)
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 
 ##
-include("utils.jl")
-##
-save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
-data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
-scenario_directories = readdir(data_directory)
-current_path = joinpath(data_directory, scenario_directories[1])
-variable_directories = readdir(current_path)
-
-##
 if process_data
     field = "tas"
     month = 1
@@ -71,6 +62,7 @@ for (jj, eof_index) in enumerate([1, 10, 100, 1000])
         ax = Axis(fig[1,jj]; title = "Mode $eof_index", xlabel = "Temperature (K)", common_options...)
     end
     month_eof = eofs[eof_index, :, :]
+    means = mean(month_eof, dims = 2)
     line_fit = linear_coefficients[eof_index, 1, month] .+ linear_coefficients[eof_index, 2, month] * temperature
     restructured = [month_eof[:, i] for i in 1:45]
     if jj == 1
@@ -82,6 +74,7 @@ for (jj, eof_index) in enumerate([1, 10, 100, 1000])
     for i in 1:45
         scatter!(ax, temperature * scale, factor * restructured[i], color = (:purple, 0.03))
     end
+    scatter!(ax, temperature * scale, factor * means[:], color = (:black, 0.5))
     lines!(ax, temperature * scale, factor * line_fit, color = :blue, label = "Emulator")
     if jj == 1
         axislegend(ax, position = :lt, labelsize = legend_ls)

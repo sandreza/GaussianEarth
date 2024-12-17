@@ -5,7 +5,8 @@ using CairoMakie, Printf, GeoMakie
 using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
 using LinearAlgebra, Distributions
 
-save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
+# save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
+save_directory = "/net/fs06/d3/mgeo/GaussianEarthData/"
 data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
 scenario_directories = readdir(data_directory)
 current_path = joinpath(data_directory, scenario_directories[1])
@@ -17,6 +18,7 @@ include("utils.jl")
 field = "tas"
 hfile = h5open(save_directory * field * "_gaussian_model.hdf5", "r")
 μmodel = read(hfile["mean"])
+μmodel_quadratic = read(hfile["mean_quadratic"])
 Lmodel = read(hfile["L model"])
 basis = read(hfile["basis"])
 close(hfile)

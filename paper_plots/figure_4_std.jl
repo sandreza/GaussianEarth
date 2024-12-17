@@ -7,13 +7,6 @@ resolution = (1350, 600)
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 linewidth = 5
 
-include("utils.jl")
-##
-save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
-data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
-scenario_directories = readdir(data_directory)
-current_path = joinpath(data_directory, scenario_directories[1])
-variable_directories = readdir(current_path)
 ##
 field_name = "tas" 
 colors = [:red4, :red, :indigo, :magenta3]
@@ -28,7 +21,6 @@ if process_data
     sqrt_f_metric = sqrt.(reshape(metric, 192 * 96))
 
     Φ = eof_basis(field_name) 
-
 end
 
 ## get true data for comparison

@@ -1,18 +1,4 @@
 
-#load in the temperatures
-
-using CairoMakie, Printf, GeoMakie
-using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
-using LinearAlgebra, Distributions
-
-figure_directory = "./figures/"
-proce ss_data = true
-
-save_directory = save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
-data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
-scenario_directories = readdir(data_directory)
-current_path = joinpath(data_directory, scenario_directories[1])
-variable_directories = readdir(current_path)
 ##
 field = "tas" 
 field_name = "tas"
@@ -31,6 +17,11 @@ close(hfile)
 emulator = GaussianEmulator(μmodel, Lmodel, basis)
 
 d = 1000
+
+# load in CO2 and temperature data
+
+
+
 
 
 # get metric correction terms
