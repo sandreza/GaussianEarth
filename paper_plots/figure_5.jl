@@ -19,8 +19,6 @@ if process_data
     close(hfile)
     sqrt_f_metric = sqrt.(reshape(metric, 192 * 96))
 
-    include("emulator.jl")
-
     tas_fields = []
     hurs_fields = []
     temperatures = []
@@ -55,28 +53,29 @@ end
 fig = Figure(; resolution)
 nlongitude = longitude .- 180
 scenario_index = 1
+cmap = Reverse(:linear_tritanopic_krjcw_5_98_c46_n256) #:plasma
 ax = GeoAxis(fig[1,1]; title = "Historical", common_options...)
 field = emulated_truth_truth_error[:, :, scenario_index]
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = :plasma, colorrange = (0, 1), shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
 hidedecorations!(ax)
 scenario_index = 2 
 ax = GeoAxis(fig[1,2]; title = "SSP5-8.5", common_options...)
 field = emulated_truth_truth_error[:, :, scenario_index]
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = :plasma, colorrange = (0, 1), shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
 hidedecorations!(ax)
 scenario_index = 3
 ax = GeoAxis(fig[2,1]; title = "SSP1-1.9", common_options...)
 field = emulated_truth_truth_error[:, :, scenario_index]
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = :plasma, colorrange = (0, 1), shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
 hidedecorations!(ax)
 scenario_index = 4
 ax = GeoAxis(fig[2,2]; title = "SSP2-4.5", common_options...)
 field = emulated_truth_truth_error[:, :, scenario_index]
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = :plasma, colorrange = (0, 1), shading = NoShading)
-Colorbar(fig[1:2,3], colormap=:plasma, colorrange=(0, 1), height = Relative(2/4), label = "Temperature Error (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
+Colorbar(fig[1:2,3], colormap=cmap, colorrange=(0, 1), height = Relative(2/4), label = "Temperature Error (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
 hidedecorations!(ax)
 save(figure_directory * "emulated_truth_truth_error_unweighted_scenarios_tas.png", fig)

@@ -12,14 +12,6 @@ resolution = (400, 150) .* 12
 lw = 7
 global_common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 
-include("utils.jl")
-##
-save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
-data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
-scenario_directories = readdir(data_directory)
-current_path = joinpath(data_directory, scenario_directories[1])
-variable_directories = readdir(current_path)
-##
 if process_data
     include("emulator.jl")
     include("emulator_hurs.jl")

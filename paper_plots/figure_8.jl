@@ -9,8 +9,6 @@ legend_ls = 35
 resolution = (400, 100) .* 6 
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 
-include("utils.jl")
-include("emulator.jl")
 ##
 month = 1
 field = "tas"
@@ -78,7 +76,7 @@ if process_data
     hot_mus_lower = Float32[]
     hot_sigmas_lower = Float32[]
     for month in 1:12
-        emulator.global_mean_temperature[1] = max_temp 
+        emulator.global_mean_temperature[1] = max_temp #this doesn't make sense and also doesn't appear anywhere else
         emulator.month[1] = month
         Σ = emulator_variance(emulator)
         mean_modes = mode_mean(emulator; modes = 1000)

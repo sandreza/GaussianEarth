@@ -57,7 +57,7 @@ hfile["mean_quadratic"] = μmodel
 close(hfile)
 
 ##
-emulator = GaussianEmulator(μmodel, Lmodel, basis)
+emulator = GaussianEmulator(μmodel, Lmodel, basis) #defaults to quadratic
 mean_field = mean(emulator)
 variance_field = variance(emulator)
 mean_modes = mode_mean(emulator)
