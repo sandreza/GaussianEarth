@@ -88,7 +88,7 @@ for (j, mode_number) in enumerate(sort([gaussian_max, skewness_min, skewness_max
         axislegend(ax, position = :lt, labelsize = legend_ls)
     end
 end
-display(fig)
+# display(fig)
 # save(figure_directory * field * "_eof_gaussian_with_model.png", fig)
 
 κs = Float64[]

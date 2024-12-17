@@ -7,13 +7,6 @@ resolution = (1800, 600)
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 linewidth = 5
 
-include("utils.jl")
-##
-save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
-data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
-scenario_directories = readdir(data_directory)
-current_path = joinpath(data_directory, scenario_directories[1])
-variable_directories = readdir(current_path)
 ##
 field_name = "tas" 
 colors = [:red4, :red, :indigo, :magenta3]
@@ -27,34 +20,46 @@ if process_data
 end
 
 if process_data
-    hfile = h5open(save_directory * field_name * "_mean_regression.hdf5", "r")
+    # hfile = h5open(save_directory * field_name * "_mean_regression.hdf5", "r")
+    # regression_coefficients = read(hfile["regression_coefficients 1"])
+    # linear_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
+    # for month in ProgressBar(1:12)
+    #     linear_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
+    # end
+    # close(hfile)
+    hfile = h5open(save_directory * field * "_mean_regression_quadratic.hdf5", "r")
     regression_coefficients = read(hfile["regression_coefficients 1"])
-    linear_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
+    quadratic_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
     for month in ProgressBar(1:12)
-        linear_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
+        quadratic_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
     end
     close(hfile)
 
     Φ = eof_basis(field_name)
-    averaged_coefficients = mean(linear_coefficients, dims = 3)[:, :, 1]
+    # averaged_coefficients = mean(linear_coefficients, dims = 3)[:, :, 1]
+    averaged_coefficients = mean(quadratic_coefficients, dims = 3)[:, :, 1]
 
-    eof_model10 = zeros(Float32, size(Φ)[1]..., 2)
-    eof_model100 = zeros(Float32, size(Φ)[1]..., 2)
-    eof_model1000 = zeros(Float32, size(Φ)[1]..., 2)
+    eof_model10 = zeros(Float32, size(Φ)[1]..., 3)
+    eof_model100 = zeros(Float32, size(Φ)[1]..., 3)
+    eof_model1000 = zeros(Float32, size(Φ)[1]..., 3)
 
     for i in ProgressBar(1:10)
         eof_model10[:, 1] .+= Φ[:, i] * averaged_coefficients[i, 1]
         eof_model10[:, 2] .+= Φ[:, i] * averaged_coefficients[i, 2]
+        eof_model10[:, 3] .+= Φ[:, i] * averaged_coefficients[i, 3]
     end
     for i in ProgressBar(1:100)
         eof_model100[:, 1] .+= Φ[:, i] * averaged_coefficients[i, 1]
         eof_model100[:, 2] .+= Φ[:, i] * averaged_coefficients[i, 2]
+        eof_model100[:, 3] .+= Φ[:, i] * averaged_coefficients[i, 3]
     end
     for i in ProgressBar(1:1000)
         eof_model1000[:, 1] .+= Φ[:, i] * averaged_coefficients[i, 1]
         eof_model1000[:, 2] .+= Φ[:, i] * averaged_coefficients[i, 2]
+        eof_model1000[:, 3] .+= Φ[:, i] * averaged_coefficients[i, 3]
     end
 end
+
 ##
 if process_data
     filename  = field_name * "_pattern_scaling.hdf5"
@@ -76,7 +81,8 @@ scenario_names = ["Historical", "SSP5-8.5", "SSP1-1.9", "SSP2-4.5"]
 i = 2
 Ts = temperatures[i]
 field = fields[i]
-error_list10 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model10[:, 1] .+ Ts[j] * eof_model10[:, 2]))[:] .* sqrt_f_metric) for j in eachindex(Ts)]
+# error_list10 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model10[:, 1] .+ Ts[j] * eof_model10[:, 2]))[:] .* sqrt_f_metric) for j in eachindex(Ts)]
+error_list10 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model10[:, 1] .+ Ts[j] * eof_model10[:, 2] .+ Ts[j]^2 * eof_model10[:, 3]))[:] .* sqrt_f_metric) for j in eachindex(Ts)]
 ymax = maximum(error_list10)
 
 xrange = (1850, 2140)
@@ -96,7 +102,8 @@ axislegend(ax; position = :lt, labelsize = legend_ls)
 ax = Axis(fig_tas[1,4]; title = "10 Modes", xlabel = "Year", common_options...)
 for (i, field) in enumerate(fields)
     Ts = temperatures[i]
-    error_list10 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model10[:, 1] .+ Ts[j] * eof_model10[:, 2]) )[:] .* sqrt_f_metric) for j in eachindex(Ts)]
+    # error_list10 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model10[:, 1] .+ Ts[j] * eof_model10[:, 2]) )[:] .* sqrt_f_metric) for j in eachindex(Ts)]
+    error_list10 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model10[:, 1] .+ Ts[j] * eof_model10[:, 2] .+ Ts[j]^2 * eof_model10[:, 3]))[:] .* sqrt_f_metric) for j in eachindex(Ts)]
     lines!(ax, ts[i], error_list10, label = scenario_names[i] * " 10 modes", color = colors[i], linewidth = linewidth)
     xlims!(ax, xrange...)
     ylims!(ax, yrange...)
@@ -106,7 +113,8 @@ hideydecorations!(ax, grid = false)
 ax = Axis(fig_tas[1,3]; title = "100 Modes", xlabel = "Year", common_options...)
 for (i, field) in enumerate(fields)
     Ts = temperatures[i]
-    error_list100 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model100[:, 1] .+ Ts[j] * eof_model100[:, 2]) )[:] .* sqrt_f_metric) for j in eachindex(Ts)]
+    # error_list100 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model100[:, 1] .+ Ts[j] * eof_model100[:, 2]) )[:] .* sqrt_f_metric) for j in eachindex(Ts)]
+    error_list100 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model100[:, 1] .+ Ts[j] * eof_model100[:, 2] .+ Ts[j]^2 * eof_model100[:, 3]))[:] .* sqrt_f_metric) for j in eachindex(Ts)]
     lines!(ax, ts[i], error_list100, label = scenario_names[i] * " 100 modes", color = colors[i], linewidth = linewidth)
     xlims!(ax, xrange...)
     ylims!(ax, yrange...)
@@ -116,7 +124,8 @@ hideydecorations!(ax, grid = false)
 ax = Axis(fig_tas[1,2]; title = "1000 Modes", xlabel = "Year", common_options...)
 for (i, field) in enumerate(fields)
     Ts = temperatures[i]
-    error_list1000 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model1000[:, 1] .+ Ts[j] * eof_model1000[:, 2]) )[:] .* sqrt_f_metric) for j in eachindex(Ts)]
+    # error_list1000 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model1000[:, 1] .+ Ts[j] * eof_model1000[:, 2]) )[:] .* sqrt_f_metric) for j in eachindex(Ts)]
+    error_list1000 = [norm((reshape(field[:, :, j], size(Φ)[1]) .- (eof_model1000[:, 1] .+ Ts[j] * eof_model1000[:, 2] .+ Ts[j]^2 * eof_model1000[:, 3]))[:] .* sqrt_f_metric) for j in eachindex(Ts)]
     lines!(ax, ts[i], error_list1000, label = scenario_names[i] * " 1000 modes", color = colors[i], linewidth = linewidth)
     xlims!(ax, xrange...)
     ylims!(ax, yrange...)

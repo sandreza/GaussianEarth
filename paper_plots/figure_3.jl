@@ -43,11 +43,17 @@ if process_data
     eof_mode, temperature = concatenate_regression(field, ["historical", "ssp585"])
     eofs = eof_mode[:,month:12:end, 1:45] 
 
-    hfile = h5open(save_directory * field * "_mean_regression.hdf5", "r")
+    # hfile = h5open(save_directory * field * "_mean_regression.hdf5", "r")
+    # regression_coefficients = read(hfile["regression_coefficients 1"])
+    # linear_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
+    # for month in ProgressBar(1:12)
+    #     linear_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
+    # end
+    hfile = h5open(save_directory * field * "_mean_regression_quadratic.hdf5", "r")
     regression_coefficients = read(hfile["regression_coefficients 1"])
-    linear_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
+    quadratic_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
     for month in ProgressBar(1:12)
-        linear_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
+        quadratic_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
     end
     close(hfile)
 end
@@ -63,7 +69,8 @@ for (jj, eof_index) in enumerate([1, 10, 100, 1000])
     end
     month_eof = eofs[eof_index, :, :]
     means = mean(month_eof, dims = 2)
-    line_fit = linear_coefficients[eof_index, 1, month] .+ linear_coefficients[eof_index, 2, month] * temperature
+    # line_fit = linear_coefficients[eof_index, 1, month] .+ linear_coefficients[eof_index, 2, month] * temperature
+    quad_fit = quadratic_coefficients[eof_index, 1, month] .+ quadratic_coefficients[eof_index, 2, month] * temperature .+ quadratic_coefficients[eof_index, 3, month] * temperature.^2
     restructured = [month_eof[:, i] for i in 1:45]
     if jj == 1
         factor = -1
@@ -75,7 +82,8 @@ for (jj, eof_index) in enumerate([1, 10, 100, 1000])
         scatter!(ax, temperature * scale, factor * restructured[i], color = (:purple, 0.03))
     end
     scatter!(ax, temperature * scale, factor * means[:], color = (:black, 0.5))
-    lines!(ax, temperature * scale, factor * line_fit, color = :blue, label = "Emulator")
+    # lines!(ax, temperature * scale, factor * line_fit, color = :blue, label = "Emulator")
+    lines!(ax, temperature * scale, factor * quad_fit, color = :blue, label = "Emulator")
     if jj == 1
         axislegend(ax, position = :lt, labelsize = legend_ls)
     end

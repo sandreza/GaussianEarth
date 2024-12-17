@@ -198,11 +198,16 @@ end
 
 function mean(emulator::GaussianEmulator; modes = 1000)
     M, N = size(emulator.basis)
+    k = size(emulator.mean)[2] - 1
     month = emulator.month[1]
     global_mean_temperature = emulator.global_mean_temperature[1]
     ensemble_mean = zeros(Float32, M)
     for i in 1:modes
-        ensemble_mean .+= emulator.basis[:, i] *(emulator.mean[i, 1, month] + emulator.mean[i, 2, month]* global_mean_temperature)
+        if k == 1
+            ensemble_mean .+= emulator.basis[:, i] *(emulator.mean[i, 1, month] + emulator.mean[i, 2, month]* global_mean_temperature)
+        elseif k == 2
+            ensemble_mean .+= emulator.basis[:, i] *(emulator.mean[i, 1, month] + emulator.mean[i, 2, month]* global_mean_temperature + emulator.mean[i, 3, month]* global_mean_temperature^2)
+        end
     end
     return ensemble_mean
 end
@@ -225,7 +230,12 @@ end
 function mode_mean(emulator; modes = 1000)
     global_mean_temperature = emulator.global_mean_temperature[1]
     month = emulator.month[1]
-    return emulator.mean[1:modes, 1, month] + emulator.mean[1:modes, 2, month]* global_mean_temperature
+    k = size(emulator.mean)[2] - 1
+    if k == 1
+        return emulator.mean[1:modes, 1, month] + emulator.mean[1:modes, 2, month]* global_mean_temperature
+    elseif k == 2
+        return emulator.mean[1:modes, 1, month] + emulator.mean[1:modes, 2, month]* global_mean_temperature + emulator.mean[1:modes, 3, month]* global_mean_temperature^2
+    end
 end
 
 function mode_variance(emulator; modes = 1000)
