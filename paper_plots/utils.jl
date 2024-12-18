@@ -215,8 +215,13 @@ end
 function rand(emulator::GaussianEmulator; modes = 1000)
     M, N = size(emulator.basis)
     month = emulator.month[1]
+    k = size(emulator.mean)[2] - 1
     global_mean_temperature = emulator.global_mean_temperature[1]
-    μ = emulator.mean[1:modes, 1, month] .+ emulator.mean[1:modes, 2, month]* global_mean_temperature
+    if k == 1
+        μ = emulator.mean[1:modes, 1, month] .+ emulator.mean[1:modes, 2, month]* global_mean_temperature
+    elseif k == 2
+        μ = emulator.mean[1:modes, 1, month] .+ emulator.mean[1:modes, 2, month]* global_mean_temperature + emulator.mean[1:modes, 3, month]* global_mean_temperature^2
+    end
     L = emulator.decomposition[:, :, 1, month] + emulator.decomposition[:, :, 2, month]*global_mean_temperature
     Σ = (L' * L)[1:modes, 1:modes]
     a = rand(MvNormal(μ, Σ))

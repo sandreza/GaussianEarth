@@ -11,8 +11,6 @@ resolution = (1800, 1200) .* 2
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls, xlabelpadding = xlp, ylabelpadding = ylp)
 
 if process_data
-    save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
-    data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
     field_name = "tas"
     hfile = h5open(save_directory * field_name * "_basis.hdf5", "r")
     latitude = read(hfile["latitude"])

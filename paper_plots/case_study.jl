@@ -4,24 +4,15 @@ field = "tas"
 field_name = "tas"
 # field = "hurs" 
 # field_name = "hurs"
-process_data = true
-include("utils.jl")
 
 #load in saved out linear emulator
-hfile = h5open(save_directory * field * "_gaussian_model.hdf5", "r")
-μmodel = read(hfile["mean"])
-Lmodel = read(hfile["L model"])
-basis = read(hfile["basis"])
-scale_factor = read(hfile["scale factor"])
-close(hfile)
-emulator = GaussianEmulator(μmodel, Lmodel, basis)
-
+include(:"emulator.jl")
 d = 1000
 
-# load in CO2 and temperature data
-
-
-
+# load in arbitrary scenario
+hfile = h5open("arbitrary_scenario.hdf5", "r")
+temperatures = read(hfile["arbitrary"]) 
+close(hfile)
 
 
 # get metric correction terms
