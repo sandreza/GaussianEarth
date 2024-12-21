@@ -30,16 +30,6 @@ for (e, scenario) in enumerate(scenarios)
     lines!(ax, (scenario=="historical" ? time_history : time_future), mean_gmt[:], color=scenario_colors[scenario], alpha=1, linestyle=:solid, label=scenario_labels[e])
 end
 
-# arbitrary scenario
-using DelimitedFiles
-# structure: Year,Baseline,Current Scenario
-csvdata = readdlm("./arbitrary-scenario-temp.csv", ',', Float64)
-arbitrary = csvdata[16:end, 3] .+ baseline
-lines!(ax, time_future, arbitrary, color=:black, alpha=1, label="Arbitrary Scenario")
-
-hfile = h5open("arbitrary_scenario.hdf5", "w")
-write(hfile, "arbitrary", arbitrary)
-close(hfile)
 
 axislegend(ax, position=:lt)
 save(figure_directory*"figure_1.png", fig)

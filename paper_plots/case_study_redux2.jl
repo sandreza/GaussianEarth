@@ -7,23 +7,16 @@ resolution = (400, 150) .* 12
 lw = 7
 global_common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 ##
-scenarios = ["historical", "ssp119", "ssp245", "ssp585"]
-time_history = 1850:2014
-time_future = 2015:2100
-scenario_colors = Dict("historical" => :red4, "ssp585" => :red, "ssp245" => :magenta3, "ssp119" => :indigo)
-scenario_labels = ["Historical","SSP1-1.9",  "SSP2-4.5", "SSP5-8.5"]
 
-#
-# arbitrary scenario
-using DelimitedFiles
-# structure: Year,Baseline,Current Scenario
-csvdata = readdlm("./arbitrary-scenario-temp.csv", ',', Float64)
-baseline = regression_variable("historical")[1]*273
-arbitrary = csvdata[16:end, 3] .+ baseline
+include("emulator.jl")
+include("emulator_hurs.jl")
 
-hfile = h5open("arbitrary_scenario.hdf5", "w")
-write(hfile, "arbitrary", arbitrary)
+
+hfile = h5open("new_scenarios.hdf5", "r")
+scenario_1 = read(hfile["scenario_1"])
+scenario_2 = read(hfile["scenario_2"])
 close(hfile)
+
 
 ##
 field = "tas" 
@@ -37,14 +30,12 @@ include("emulator_hurs.jl")
 d = 1000
 
 # load in arbitrary scenario
-hfile = h5open("arbitrary_scenario.hdf5", "r")
-temperatures = read(hfile["arbitrary"]) 
-close(hfile)
-min_temp = temperatures[1]/273 #2015
-max_temp = temperatures[end]/273 #2100
 
-temps585 = regression_variable("ssp585")
-max_temp585 = temps585[end]
+min_temp_1 = scenario_1[16]/273 #2015
+max_temp_1 = scenario_1[36]/273 #2050
+
+min_temp_2 = scenario_2[16]/273 #2015
+max_temp_2 = scenario_2[36]/273 #2050
 
 hfile = h5open(save_directory * field * "_basis.hdf5", "r")
 latitude = read(hfile["latitude"])
@@ -84,9 +75,9 @@ xticks = (1:12, month_string)
 for i in eachindex(observables)
     month = 7
     emulator.month[1] = month
-    emulator.global_mean_temperature[1] = max_temp585
+    emulator.global_mean_temperature[1] = max_temp_1
     emulator_hurs.month[1] = month
-    emulator_hurs.global_mean_temperature[1] = max_temp585
+    emulator_hurs.global_mean_temperature[1] = max_temp_1
     tasmean, tasstd = emulator_mean_variance_linear_functionals(observables, emulator)
     hursmean, hursstd = emulator_mean_variance_linear_functionals(observables, emulator_hurs)
 
@@ -95,21 +86,21 @@ for i in eachindex(observables)
 
     ax1 = Axis(fig[1, 2*i]; title = observable_names[i], common_options_1..., global_common_options..., ylabel = "PDF")
     xs, ys = gaussian_grid(tasmean[i], tasstd[i])
-    lines!(ax1, xs, ys, color = :blue, linewidth = lw, label = "SSP5-8.5")
+    lines!(ax1, xs, ys, color = :blue, linewidth = lw, label = "Scenario 1")
 
     ax2 = Axis(fig[2, 2*i]; title = observable_names[i], common_options_2..., global_common_options..., ylabel = "PDF")
     xs, ys = gaussian_grid(hursmean[i], hursstd[i])
     lines!(ax2, xs, ys, color = :blue, linewidth = lw)
 
     emulator.month[1] = month
-    emulator.global_mean_temperature[1] = max_temp
+    emulator.global_mean_temperature[1] = max_temp_2
     emulator_hurs.month[1] = month
-    emulator_hurs.global_mean_temperature[1] = max_temp
+    emulator_hurs.global_mean_temperature[1] = max_temp_2
     tasmean, tasstd = emulator_mean_variance_linear_functionals(observables, emulator)
     hursmean, hursstd = emulator_mean_variance_linear_functionals(observables, emulator_hurs)
 
     xs, ys = gaussian_grid(tasmean[i], tasstd[i])
-    lines!(ax1, xs, ys, color = :orange, linewidth = lw, label = "New Scenario")
+    lines!(ax1, xs, ys, color = :orange, linewidth = lw, label = "Scenario 2")
     xs, ys = gaussian_grid(hursmean[i], hursstd[i])
     lines!(ax2, xs, ys, color = :orange, linewidth = lw)
 
@@ -125,10 +116,33 @@ for i in eachindex(observables)
     hursstdlist = zeros(Float32, 12)
     for month in 1:12
         emulator.month[1] = month
-        emulator.global_mean_temperature[1] = max_temp
+        emulator.global_mean_temperature[1] = max_temp_1
         tasmean, tasstd = emulator_mean_variance_linear_functionals([observables[i]], emulator)
         emulator_hurs.month[1] = month
-        emulator_hurs.global_mean_temperature[1] = max_temp
+        emulator_hurs.global_mean_temperature[1] = max_temp_1
+        hursmean, hursstd = emulator_mean_variance_linear_functionals([observables[i]], emulator_hurs)
+        
+        tasmeanlist[month] = tasmean[1]
+        hursmeanlist[month] = hursmean[1]
+        tasstdlist[month] = tasstd[1]
+        hursstdlist[month] = hursstd[1]
+    end
+    lines!(ax3, 1:12, tasmeanlist, color = :blue, linewidth = lw)
+    band!(ax3, 1:12, tasmeanlist .- 3 .* tasstdlist, tasmeanlist .+ 3 .* tasstdlist, color = (:blue, 0.2))
+    lines!(ax4, 1:12, hursmeanlist, color = :blue, linewidth = lw)
+    band!(ax4, 1:12, hursmeanlist .- 3 .* hursstdlist, hursmeanlist .+ 3 .* hursstdlist, color = (:blue, 0.2))
+
+    
+    tasmeanlist = zeros(Float32, 12)
+    tasstdlist = zeros(Float32, 12)
+    hursmeanlist = zeros(Float32, 12)
+    hursstdlist = zeros(Float32, 12)
+    for month in 1:12
+        emulator.month[1] = month
+        emulator.global_mean_temperature[1] = max_temp_2
+        tasmean, tasstd = emulator_mean_variance_linear_functionals([observables[i]], emulator)
+        emulator_hurs.month[1] = month
+        emulator_hurs.global_mean_temperature[1] = max_temp_2
         hursmean, hursstd = emulator_mean_variance_linear_functionals([observables[i]], emulator_hurs)
         
         tasmeanlist[month] = tasmean[1]
@@ -143,4 +157,4 @@ for i in eachindex(observables)
 
 end
 display(fig)
-save(figure_directory * "case_study.png", fig)
+# save(figure_directory * "case_study.png", fig)
