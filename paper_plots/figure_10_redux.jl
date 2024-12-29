@@ -13,9 +13,10 @@ lw = 7
 global_common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 
 if process_data
+    scenario = "ssp245"
     include("emulator.jl")
     include("emulator_hurs.jl")
-    _, temperatures = concatenate_regression("tas", ["historical", "ssp585"])
+    _, temperatures = concatenate_regression("tas", ["historical", scenario])
 end
 ##
 month = 1
@@ -70,16 +71,16 @@ observables = [location_1, location_3]
 if process_data
     historical_tas = common_array("historical", "tas"; ensemble_members = 45)
     historical_hurs = common_array("historical", "hurs"; ensemble_members = 29)
-    ssp585_tas = common_array("ssp585", "tas"; ensemble_members = 45)
-    ssp585_hurs = common_array("ssp585", "hurs"; ensemble_members = 29)
+    scenario_tas = common_array(scenario, "tas"; ensemble_members = 45)
+    scenario_hurs = common_array(scenario, "hurs"; ensemble_members = 29)
     historical_temperatures = regression_variable("historical")
-    ssp585_temperatures = regression_variable("ssp585")
+    scenario_temperatures = regression_variable(scenario)
 end
 ##
 indmin = 100
 min_temp = historical_temperatures[indmin]
 indmax = 43
-max_temp = ssp585_temperatures[indmax]
+max_temp = scenario_temperatures[indmax]
 ##
 window = 2 
 increment = 2 * window + 1
@@ -127,9 +128,9 @@ for i in eachindex(observables)
     xs, ys = gaussian_grid(hursmean[i], hursstd[i])
     lines!(ax2, xs, ys, color = :orange, label = "2050 (Emulator)", linewidth = lw)
 
-    rfield = reshape(ssp585_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
+    rfield = reshape(scenario_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
     tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
-    rfield = reshape(ssp585_hurs[:, :, indmax-window:indmax+window, month, :], (192 * 96, 29*increment))
+    rfield = reshape(scenario_hurs[:, :, indmax-window:indmax+window, month, :], (192 * 96, 29*increment))
     hurs_hist = [observables[i](rfield[:, j]) for j in 1:29*increment]
     hist!(ax1, tas_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf, label = "2050 (Data)")
     hist!(ax2, hurs_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf, label = "2050 (Data)")
@@ -177,9 +178,9 @@ for i in eachindex(observables)
     xs, ys = gaussian_grid(hursmean[i], hursstd[i])
     lines!(ax2, xs, ys, color = :orange, linewidth = lw)
 
-    rfield = reshape(ssp585_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
+    rfield = reshape(scenario_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
     tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
-    rfield = reshape(ssp585_hurs[:, :, indmax-window:indmax+window, month, :], (192 * 96, 29*increment))
+    rfield = reshape(scenario_hurs[:, :, indmax-window:indmax+window, month, :], (192 * 96, 29*increment))
     hurs_hist = [observables[i](rfield[:, j]) for j in 1:29*increment]
     hist!(ax1, tas_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf)
     hist!(ax2, hurs_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf)
@@ -187,4 +188,4 @@ end
 
 display(fig)
 
-save(figure_directory * "climate_change_shifts_hurs_tas_with_data_jan_july_points.png", fig)
+save(figure_directory * "climate_change_shifts_hurs_tas_with_data_jan_july_points_"*scenario*".png", fig)
