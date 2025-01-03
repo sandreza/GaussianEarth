@@ -5,7 +5,7 @@ lat = 42.3601
 location_string = "Boston"
 
 
-location_string = "Capita Bermudez"
+location_string = "Capita_Bermudez"
 lat = -32.82
 lon = -60.72
 
@@ -28,9 +28,9 @@ metric = read(hfile["metric"] )
 close(hfile)
 
 
-boston_temp = zeros(1980, length(file_names))
+location_temp = zeros(1980, length(file_names))
 gmt = zeros(1980, length(file_names))
-for i in ProgressBar(eachindex(file_names))
+for i in ProgressBar(eachindex(file_names)[1:48])
     file_name = file_names[i] # pick the first file for computing a basis
     file_path = joinpath(local_current_path, file_name)
 
@@ -58,7 +58,7 @@ for i in ProgressBar(eachindex(file_names))
     for j in ProgressBar(1:T)
         field= shifted_tmp[:, :, j]
         itp = cubic_spline_interpolation((x, y), field)
-        boston_temp[j, i] = itp(lon, lat) 
+        location_temp[j, i] = itp(lon, lat) 
         gmt[j, i] = sum(field .* metric)
     end
 
@@ -66,13 +66,13 @@ end
 
 ##
 hfile = h5open(location_string * "_historical.hdf5", "w")
-hfile[location_string * "_temp"] = boston_temp[:, 1:48]
+hfile["temp"] = location_temp[:, 1:48]
 hfile["gmt"] = gmt[:, 1:48]
 close(hfile)
 
 ##
 hfile = h5open(location_string * "_historical.hdf5", "r")
-boston_temp = read(hfile["temp"] )
+location_temp = read(hfile["temp"] )
 gmt = read(hfile["gmt"] )
 close(hfile)
 
@@ -80,8 +80,8 @@ fig = Figure(resolution = (2000, 2000))
 for i in 1:4
     rr = rand(1:48)
     ax = Axis(fig[i, 1]; title = location_string * " temperature")
-    lines!(ax, boston_temp[:, rr])
+    lines!(ax, location_temp[:, rr])
     ax = Axis(fig[i, 2]; title = "GMT")
     lines!(ax, gmt[:, rr])
 end
-location_string * save("_temp_gmt.png", fig)
+save(location_string * "_temp_gmt.png", fig)
