@@ -1,5 +1,5 @@
 figure_directory = "figures/"
-process_data = true
+process_data = false
 
 using CairoMakie, Printf, GeoMakie
 using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
@@ -11,13 +11,15 @@ scenario_directories = readdir(data_directory)
 current_path = joinpath(data_directory, scenario_directories[1])
 variable_directories = readdir(current_path)
 
+
+
 # include("figure_2.jl")
 # include("figure_3.jl")
 # include("figure_4.jl")
-# include("figure_5.jl")
+include("figure_5.jl")
 # include("figure_6.jl")
 # include("figure_7.jl")
 # include("figure_8.jl")
 # include("figure_9_land_sea_redux.jl")
-include("figure_10_redux.jl")
-include("parametric_assumption_redux.jl")
+# include("figure_10_redux.jl")
+# include("parametric_assumption_redux.jl")
