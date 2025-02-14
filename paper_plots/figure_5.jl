@@ -57,6 +57,7 @@ cmap = Reverse(:linear_tritanopic_krjcw_5_98_c46_n256) #:plasma
 ax = GeoAxis(fig[1,1]; title = "Historical", common_options...)
 field = emulated_truth_truth_error[:, :, scenario_index]
 shifted_field = circshift(field, (96, 0))
+cmap = Reverse(:linear_tritanopic_krjcw_5_98_c46_n256)
 surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
 hidedecorations!(ax)
 scenario_index = 2 
