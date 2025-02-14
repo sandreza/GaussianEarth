@@ -1,2 +1,2 @@
 # GaussianEarth
-CMIP to Gaussian
+Code for "A Statistical Emulator Design for Averaged Climate Fields"
