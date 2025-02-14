@@ -12,8 +12,6 @@ scenario_directories = readdir(data_directory)
 current_path = joinpath(data_directory, scenario_directories[1])
 variable_directories = readdir(current_path)
 
-
-
 include("utils.jl")
 
 #load in saved out tas emulator
@@ -30,6 +28,7 @@ variance_field = variance(emulator)
 mean_modes = mode_mean(emulator)
 variance_modes = mode_variance(emulator)
 
+include("figure_1.jl")
 include("figure_2.jl")
 include("figure_3.jl")
 include("figure_4.jl")
@@ -40,3 +39,5 @@ include("figure_8.jl")
 include("figure_9_land_sea_redux.jl")
 include("figure_10_redux.jl")
 include("parametric_assumption_redux.jl")
+include("generate_new_scenario_redux.jl")
+include("case_study_redux3.jl")
