@@ -64,10 +64,16 @@ function chicago(field)
     return rfield[146, 70]
 end
 
-function nw_india(field)
+# function nw_india(field)
+#     rfield = reshape(field, (192, 96))
+#     return rfield[148, 61]
+# end
+
+function nw_india(field) #CORRECT ONE
     rfield = reshape(field, (192, 96))
-    return rfield[148, 61]
+    return rfield[46, 61]
 end
+    
 
 observables = [nw_india, losangeles]
 

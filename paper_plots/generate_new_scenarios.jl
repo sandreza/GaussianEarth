@@ -1,3 +1,5 @@
+# this is the old version, not used in the paper. creates two scenarios for comparison.
+
 time_future = 2015:2100
 
 init_temp = regression_variable("historical")[end]*273
@@ -21,8 +23,8 @@ k2 = 0.05  # Faster exponential rate for scenario 2
 interim_end_temp = ssp2[16]
 n =16
 for t in 1:16
-    # scenario_1[t] = init_temp * (interim_end_temp / init_temp) ^ ((t - 1) / (n - 1)) ^ k1
-    # scenario_2[t] = init_temp * (interim_end_temp / init_temp) ^ ((t - 1) / (n - 1)) ^ k2
+    # scenario_1[t] = init_temp * (interim_end_temp / init_temp) ^ ((t - 1) / (n - 1)) 
+    # scenario_2[t] = init_temp * (interim_end_temp / init_temp) ^ ((t - 1) / (n - 1))
     scenario_1[t] = init_temp + (interim_end_temp - init_temp) * (log(1 + k1 * t) / log(1 + k1 * n))
     scenario_2[t] = init_temp + (interim_end_temp - init_temp) * (log(1 + k2 * t) / log(1 + k2 * n))
 end

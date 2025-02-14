@@ -278,12 +278,12 @@ function emulator_variance(emulator::GaussianEmulator; modes = 1000, month = not
     return Σ
 end
 
-function emulator_mean_variance_linear_functionals(observables, emulator::GaussianEmulator; modes = 1000)
+function emulator_mean_variance_linear_functionals(observables, emulator::GaussianEmulator; modes = 1000, show_progress = true)
     μs = zeros(Float32, length(observables))
     σs = zeros(Float32, length(observables))
     mean_modes = mode_mean(emulator; modes)
     Σ = emulator_variance(emulator; modes)
-    for (i, observable) in ProgressBar(enumerate(observables))
+    for (i, observable) in (show_progress ? ProgressBar(enumerate(observables)) : enumerate(observables))
         observable_basis = [observable(emulator.basis[:, j]) for j in 1:modes]
         σ = sqrt(observable_basis' * (Σ * observable_basis)) 
         μ = mean_modes' * observable_basis
@@ -291,4 +291,10 @@ function emulator_mean_variance_linear_functionals(observables, emulator::Gaussi
         σs[i] = Float32(σ)
     end
     return μs, σs
+end
+
+function kl_div(mu1, sigma1, mu2, sigma2)
+    # KL Divergence between N(mu1, sigma1^2) and N(mu2, sigma2^2)
+    # measures the divergence of D1 from D2
+    return log(sigma2 / sigma1) + (sigma1^2 + (mu1 - mu2)^2) / (2 * sigma2^2) - 0.5
 end

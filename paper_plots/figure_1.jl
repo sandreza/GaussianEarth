@@ -5,8 +5,8 @@ scenario_colors = Dict("historical" => :red4, "ssp585" => :red, "ssp245" => :mag
 scenario_labels = ["Historical","SSP1-1.9",  "SSP2-4.5", "SSP5-8.5"]
 
 baseline = 0.0
-fig = Figure(resolution=(600, 500))
-ax = Axis(fig[1,1], xlabel="Year", ylabel="Global Mean Temperature (K)", xticks=1850:50:2100)# title="Global Mean Temperature in MPI-ESM1.2-LR",
+fig = Figure(resolution=(600, 400))
+ax = Axis(fig[1,1], xlabel="Year", ylabel="Global Mean Temperature (K)", xticks=1850:50:2100, title="Global Mean Temperature in MPI-ESM1.2-LR")
 for (e, scenario) in enumerate(scenarios)
     hfile = h5open(save_directory * field_name * "_" * scenario * "_projection.hdf5", "r")
     global_mean = read(hfile["global mean"])
