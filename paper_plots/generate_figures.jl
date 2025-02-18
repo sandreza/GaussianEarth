@@ -1,5 +1,5 @@
 figure_directory = "figures/"
-process_data = false
+process_data = true
 
 using CairoMakie, Printf, GeoMakie
 using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
