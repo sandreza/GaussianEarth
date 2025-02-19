@@ -40,11 +40,9 @@ if process_data
                 # tas 
                 emulator.global_mean_temperature[1] = temperatures[scenario_index][year]
                 emulator.month[1] = month
-                if plot_error
-                    emulated_truth .= reshape(mean(emulator), 192, 96)
-                    truth .= mean(tas_fields[scenario_index][:, :, year, month, :], dims=3)[:,:, 1]
-                    emulated_truth_truth_error[:, :, scenario_index] .+= abs.(emulated_truth .- truth) / ( N * 12)
-                end
+                emulated_truth .= reshape(mean(emulator), 192, 96)
+                truth .= mean(tas_fields[scenario_index][:, :, year, month, :], dims=3)[:,:, 1]
+                emulated_truth_truth_error[:, :, scenario_index] .+= abs.(emulated_truth .- truth) / ( N * 12)
             end
         end
     end

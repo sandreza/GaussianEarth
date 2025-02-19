@@ -145,6 +145,7 @@ function ensemble_averaging(scenario, variable; data_directory = "/net/fs06/d3/m
         end
     end
     if return_std
+        # returns both the average std and the monthly stds
         return std(all_together, dims = 5)[:,:,:,:,1], mean(std(all_together, dims =4)[:,:,:,:, 1], dims=4)[:,:,:,1]
     else
         return mean(all_together, dims = 5)[:,:,:,:,1], mean(all_together, dims = (4, 5))[:,:,:,1, 1]
@@ -189,7 +190,7 @@ function GaussianEmulator(data_directory; modes = 1000)
     decomposition = read(hfile["L model"])[1:modes, 1:modes, :, :]
     basis = read(hfile["basis"])[:, 1:modes]
     close(hfile)
-    return GaussianEmulator(mean, decomposition, basis, [1], [1.0555532f0]) #why these numbers??
+    return GaussianEmulator(mean, decomposition, basis, [1], [1.0555532f0]) 
 end
 
 function GaussianEmulator(μmodel, Lmodel, basis)
