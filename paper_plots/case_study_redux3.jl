@@ -1,11 +1,12 @@
 #the actual code for the case study figure
+plot_divergence = false
 
 ts = 60
 xls = 70 
 yls = 70
 tls = 70
 legend_ls = 60
-resolution = (400, 150) .* 12
+resolution = plot_divergence ? (400, 150) .* 12 : (300, 150) .* 12
 lw = 7
 global_common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 ##
@@ -82,35 +83,35 @@ begin
 
 end
 observables = [nw_india, chicago]
-
-
-#get divergences
-divs_tas = zeros(Float32, (length(observables), length(new_scenario)))
-divs_hurs = zeros(Float32, (length(observables), length(new_scenario)))
-
 month = 1
-for (i, year) in ProgressBar(enumerate(2015:2100))
-    emulator.month[1] = month
-    emulator_hurs.month[1] = month
-    temp = new_scenario_temperatures[i]
-    emulator.global_mean_temperature[1] = temp
-    emulator_hurs.global_mean_temperature[1] = temp
-    tasmean, tasstd = emulator_mean_variance_linear_functionals(observables, emulator; show_progress = false)
-    hursmean, hursstd = emulator_mean_variance_linear_functionals(observables, emulator_hurs; show_progress = false)
 
-    temp = ssp5_temperatures[i]
-    emulator.global_mean_temperature[1] = temp
-    emulator_hurs.global_mean_temperature[1] = temp
-    tasmean_ssp5, tasstd_ssp5 = emulator_mean_variance_linear_functionals(observables, emulator; show_progress = false)
-    hursmean_ssp5, hursstd_ssp5 = emulator_mean_variance_linear_functionals(observables, emulator_hurs; show_progress = false)
+if plot_divergence
+    #get divergences
+    divs_tas = zeros(Float32, (length(observables), length(new_scenario)))
+    divs_hurs = zeros(Float32, (length(observables), length(new_scenario)))
 
-    for j in eachindex(observables)
-        # divergence of new scenario from ssp5
-        divs_tas[j, i] = kl_div(tasmean[j], tasstd[j], tasmean_ssp5[j], tasstd_ssp5[j])
-        divs_hurs[j, i] = kl_div(hursmean[j], hursstd[j], hursmean_ssp5[j], hursstd_ssp5[j])
+    for (i, year) in ProgressBar(enumerate(2015:2100))
+        emulator.month[1] = month
+        emulator_hurs.month[1] = month
+        temp = new_scenario_temperatures[i]
+        emulator.global_mean_temperature[1] = temp
+        emulator_hurs.global_mean_temperature[1] = temp
+        tasmean, tasstd = emulator_mean_variance_linear_functionals(observables, emulator; show_progress = false)
+        hursmean, hursstd = emulator_mean_variance_linear_functionals(observables, emulator_hurs; show_progress = false)
+
+        temp = ssp5_temperatures[i]
+        emulator.global_mean_temperature[1] = temp
+        emulator_hurs.global_mean_temperature[1] = temp
+        tasmean_ssp5, tasstd_ssp5 = emulator_mean_variance_linear_functionals(observables, emulator; show_progress = false)
+        hursmean_ssp5, hursstd_ssp5 = emulator_mean_variance_linear_functionals(observables, emulator_hurs; show_progress = false)
+
+        for j in eachindex(observables)
+            # divergence of new scenario from ssp5
+            divs_tas[j, i] = kl_div(tasmean[j], tasstd[j], tasmean_ssp5[j], tasstd_ssp5[j])
+            divs_hurs[j, i] = kl_div(hursmean[j], hursstd[j], hursmean_ssp5[j], hursstd_ssp5[j])
+        end
     end
 end
-
 
 fig = Figure(; resolution)
 observable_names_base = ["NW India", "Midwest US"]
@@ -127,23 +128,24 @@ lines!(ax0, 2015:2100, ssp2, color = :magenta3, linewidth = lw,linestyle=:dash, 
 axislegend(ax0, position = :lt, labelsize = legend_ls)
 
 for i in eachindex(observables)
-    if i == 2
-        ax1 = Axis(fig[1, 2*i-1]; title = month_string[month], common_options_1..., global_common_options..., ylabel = "D")
-        ax2 = Axis(fig[2, 2*i-1]; title = month_string[month], common_options_2..., global_common_options..., ylabel = "D")
-        
-        # plot divergences
-        lines!(ax1, 2015:2100, divs_tas[1, :], color = :green, linewidth = lw, label = observable_names_base[1])
-        lines!(ax1, 2015:2100, divs_tas[2, :], color = :purple, linewidth = lw, label =observable_names_base[2])
-        lines!(ax2, 2015:2100, divs_hurs[1, :], color = :green, linewidth = lw, label = observable_names_base[1])
-        lines!(ax2, 2015:2100, divs_hurs[2, :], color = :purple, linewidth = lw, label = observable_names_base[2])
+    if plot_divergence
+        if i == 2
+            ax1 = Axis(fig[1, 2*i-1]; title = month_string[month], common_options_1..., global_common_options..., ylabel = "D")
+            ax2 = Axis(fig[2, 2*i-1]; title = month_string[month], common_options_2..., global_common_options..., ylabel = "D")
+            
+            # plot divergences
+            lines!(ax1, 2015:2100, divs_tas[1, :], color = :green, linewidth = lw, label = observable_names_base[1])
+            lines!(ax1, 2015:2100, divs_tas[2, :], color = :purple, linewidth = lw, label =observable_names_base[2])
+            lines!(ax2, 2015:2100, divs_hurs[1, :], color = :green, linewidth = lw, label = observable_names_base[1])
+            lines!(ax2, 2015:2100, divs_hurs[2, :], color = :purple, linewidth = lw, label = observable_names_base[2])
+        end
+        if i == 2
+            axislegend(ax1, position = :lt, labelsize = legend_ls)
+        end
     end
 
-    if i == 2
-        axislegend(ax1, position = :lt, labelsize = legend_ls)
-    end
-
-    ax3 = Axis(fig[1, 2*i]; title = observable_names_base[i] * " (2100)", xticks,xticklabelrotation=45.0, common_options_1..., global_common_options..., ylabel = "Temperature (K)")
-    ax4 = Axis(fig[2, 2*i]; title = observable_names_base[i] * " (2100)", xticks,xticklabelrotation=45.0, common_options_2..., global_common_options..., ylabel = "Relative Humidity (%)")
+    ax3 = Axis(fig[1, plot_divergence ? 2*i : i+1]; title = observable_names_base[i] * " (2100)", xticks,xticklabelrotation=45.0, common_options_1..., global_common_options..., ylabel = "Temperature (K)") # fig[1, 2*i] if including divergences
+    ax4 = Axis(fig[2, plot_divergence ? 2*i : i+1]; title = observable_names_base[i] * " (2100)", xticks,xticklabelrotation=45.0, common_options_2..., global_common_options..., ylabel = "Relative Humidity (%)")
     tasmeanlist = zeros(Float32, 12)
     tasstdlist = zeros(Float32, 12)
     hursmeanlist = zeros(Float32, 12)
@@ -195,4 +197,8 @@ for i in eachindex(observables)
 
 end
 display(fig)
-save(figure_directory * "case_study_divergence.png", fig)
+if plot_divergence
+    save(figure_directory * "case_study_divergence.png", fig)
+else
+    save(figure_directory * "case_study_no_div.png", fig)
+end
