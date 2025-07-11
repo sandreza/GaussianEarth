@@ -77,4 +77,6 @@ shifted_field = circshift(field, (96, 0))
 surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
 Colorbar(fig[1:2,3], colormap=cmap, colorrange=(0, 1), height = Relative(2/4), label = "Temperature Error (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
 hidedecorations!(ax)
-save(figure_directory * "emulated_truth_truth_error_unweighted_scenarios_tas.png", fig)
+save(figure_directory * "emulated_truth_truth_error_unweighted_scenarios_tas.png", fig) # this is the one currently being used in the paper
+
+
