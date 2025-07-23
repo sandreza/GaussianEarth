@@ -12,16 +12,15 @@ ylp = 20
 resolution = (1800, 1200) .* 2
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls, xlabelpadding = xlp, ylabelpadding = ylp)
 
-# calculatem errors for quadratic emulator
+# calculate errors for quadratic emulator
+field_name = "tas"
+hfile = h5open(save_directory * field_name * "_basis.hdf5", "r")
+latitude = read(hfile["latitude"])
+longitude = read(hfile["longitude"])
+metric = read(hfile["metric"])
+close(hfile)
+sqrt_f_metric = sqrt.(reshape(metric, 192 * 96))
 if process_data 
-    field_name = "tas"
-    hfile = h5open(save_directory * field_name * "_basis.hdf5", "r")
-    latitude = read(hfile["latitude"])
-    longitude = read(hfile["longitude"])
-    metric = read(hfile["metric"])
-    close(hfile)
-    sqrt_f_metric = sqrt.(reshape(metric, 192 * 96))
-
     tas_fields = []
     temperatures = []
     scenarios = ["historical", "ssp585", "ssp119", "ssp245"]
@@ -36,23 +35,31 @@ if process_data
 
     emulated_truth = zeros(Float32, 192, 96)
     truth = zeros(Float32, 192, 96)
-    emulated_truth_truth_error = zeros(Float32, 192, 96, length(scenarios))
+    # emulated_truth_truth_error = zeros(Float32, 192, 96, length(scenarios)) #commenting it out for the sake of computation
+    emulated_truth_month_error = zeros(Float32, 192, 96, 12, length(scenarios))
+    emulated_truth_error = []
 
     for scenario_index in ProgressBar(eachindex(scenarios))
+        errors = zeros(Float32, 192, 96, length(temperatures[scenario_index]), 12)
+        N = length(temperatures[scenario_index]) # number of years
         for year in ProgressBar(eachindex(temperatures[scenario_index]))
-            N = length(temperatures[scenario_index])
             for month in 1:12
                 # tas 
                 emulator.global_mean_temperature[1] = temperatures[scenario_index][year]
                 emulator.month[1] = month
-                emulated_truth .= reshape(mean(emulator), 192, 96)
-                truth .= mean(tas_fields[scenario_index][:, :, year, month, :], dims=3)[:,:, 1]
-                emulated_truth_truth_error[:, :, scenario_index] .+= abs.(emulated_truth .- truth) / ( N * 12)
-                # crucially the errors are calculated per month and then averaged
+                emulated_truth .= reshape(mean(emulator), 192, 96) #rewriting it each time for each month
+                truth .= mean(tas_fields[scenario_index][:, :, year, month, :], dims=3)[:,:, 1] #same here, for that month (and year)
+                # emulated_truth_truth_error[:, :, scenario_index] .+= abs.(emulated_truth .- truth) / ( N * 12) # and then updating the averaged error as you go
+                emulated_truth_month_error[:, :, month, scenario_index] .+= abs.(emulated_truth .- truth) / N  # this is the error per month, averaged over all years
+                # crucially the errors are calculated per every time step and then averaged
+                errors[:, :, year, month] = abs.(emulated_truth .- truth) # this is the error per month and year
             end
         end
+        push!(emulated_truth_error, errors)
     end 
 end
+
+emulated_truth_truth_error = mean(emulated_truth_month_error, dims=3) # average over the 12 months
 
 # repeat for INSTEAD the original mean trend difference
 if process_data 
@@ -65,7 +72,7 @@ if process_data
         # for year in [1, N]
 
             truth[:,:,:,1, scenario_index] = mean(tas_fields[scenario_index][:, :, 1, :, :], dims=4)[:,:, :,1] # also even taking the ensemble average here vs later is a choice
-            truth[:,:,:,2, scenario_index] = mean(tas_fields[scenario_index][:, :, N, :, :], dims=4)[:,:,:, 1] # this is relying on the assumption that the difference is maximal for the last year FIX !!
+            truth[:,:,:,2, scenario_index] = mean(tas_fields[scenario_index][:, :, argmax(temperatures[scenario_index]), :, :], dims=4)[:,:,:, 1] # this is relying on the assumption that the difference is maximal for the last year FIX !!
             truth_diff .= truth[:,:,:,2,:] .- truth[:,:,:,1,:]
             # truth .= mean(tas_fields[scenario_index][:, :, year, month, :], dims=3)[:,:, 1]
             # linear_emulated_truth_truth_error[:, :, scenario_index] .+= abs.(linear_emulated_truth .- truth) / ( N * 12) 
@@ -75,6 +82,8 @@ end
 avg_diff = mean(truth_diff, dims=3)[:,:,1, :] # average over the 12 months
 # calculate the difference
 relative =  emulated_truth_truth_error ./ avg_diff
+# or alternatively
+relative_diff = emulated_truth_month_error ./ truth_diff # this should be per month
 
 plot_linear = false
 if plot_linear
@@ -112,32 +121,183 @@ else
     fig = Figure(; resolution)
     nlongitude = longitude .- 180
     scenario_index = 1
+    month = 3
     # cmap = Reverse(:linear_tritanopic_krjcw_5_98_c46_n256) #:plasma
     cmap = :balance
     ax = GeoAxis(fig[1,1]; title = "Historical", common_options...)
-    field = relative[:, :, scenario_index]
+    field = relative_diff[:, :, month, scenario_index]
     shifted_field = circshift(field, (96, 0))
     surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (-1, 1), shading = NoShading)
     hidedecorations!(ax)
     scenario_index = 2 
     ax = GeoAxis(fig[1,2]; title = "SSP5-8.5", common_options...)
-    field = relative[:, :, scenario_index]
+    field = relative_diff[:, :, month, scenario_index]
     shifted_field = circshift(field, (96, 0))
     surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (-1, 1), shading = NoShading)
     hidedecorations!(ax)
     scenario_index = 3
     ax = GeoAxis(fig[2,1]; title = "SSP1-1.9", common_options...)
-    field = relative[:, :, scenario_index]
+    field = relative_diff[:, :, month, scenario_index]
     shifted_field = circshift(field, (96, 0))
     surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (-1, 1), shading = NoShading)
     hidedecorations!(ax)
     scenario_index = 4
     ax = GeoAxis(fig[2,2]; title = "SSP2-4.5", common_options...)
-    field = relative[:, :, scenario_index]
+    field = relative_diff[:, :, month, scenario_index]
     shifted_field = circshift(field, (96, 0))
     surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (-1, 1), shading = NoShading)
-    Colorbar(fig[1:2,3], colormap=cmap, colorrange=(-1, 1), height = Relative(2/4), label = "Difference in Temperature Error (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
+    Colorbar(fig[1:2,3], colormap=cmap, colorrange=(-1, 1), height = Relative(2/4), label = "(dimensionless)", labelsize = legend_ls, ticklabelsize = legend_ls)
     hidedecorations!(ax)
     # save(figure_directory * "emulated_truth_difference_errors_tas.png", fig)
+    display(fig)
+end
+
+### would be nice to go scenario by scenraio for all months...
+# fig = Figure(; resolution)
+# nlongitude = longitude .- 180
+
+
+for month in 1:12
+     fig = Figure(; resolution)
+    nlongitude = longitude .- 180
+    scenario_index = 1
+    # cmap = Reverse(:linear_tritanopic_krjcw_5_98_c46_n256) #:plasma
+    cmap = :balance
+    ax = GeoAxis(fig[1,1]; title = "Historical", common_options...)
+    field = relative_diff[:, :, month, scenario_index]
+    shifted_field = circshift(field, (96, 0))
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (-1, 1), shading = NoShading)
+    hidedecorations!(ax)
+    scenario_index = 2 
+    ax = GeoAxis(fig[1,2]; title = "SSP5-8.5", common_options...)
+    field = relative_diff[:, :, month, scenario_index]
+    shifted_field = circshift(field, (96, 0))
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (-1, 1), shading = NoShading)
+    hidedecorations!(ax)
+    scenario_index = 3
+    ax = GeoAxis(fig[2,1]; title = "SSP1-1.9", common_options...)
+    field = relative_diff[:, :, month, scenario_index]
+    shifted_field = circshift(field, (96, 0))
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (-1, 1), shading = NoShading)
+    hidedecorations!(ax)
+    scenario_index = 4
+    ax = GeoAxis(fig[2,2]; title = "SSP2-4.5", common_options...)
+    field = relative_diff[:, :, month, scenario_index]
+    shifted_field = circshift(field, (96, 0))
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (-1, 1), shading = NoShading)
+    Colorbar(fig[1:2,3], colormap=cmap, colorrange=(-1, 1), height = Relative(2/4), label = "(dimensionless)", labelsize = legend_ls, ticklabelsize = legend_ls)
+    hidedecorations!(ax)
+    save(figure_directory * "relative_diff_tas_$month.png", fig)
+    display(fig)
+end
+
+hfile = h5open(save_directory * "relative_diff_tas_2.hdf5", "w")
+hfile["relative_diff"] = relative_diff
+hfile["emulated_truth_month_error"] = emulated_truth_month_error
+hfile["truth_diff"] = truth_diff
+close(hfile)
+
+
+#### try instead to compare it to the stds
+## get true std data for comparison
+if process_data
+    scenarios = ["historical", "ssp585", "ssp119", "ssp245"]
+    temperatures = [] 
+    fields = [] #list of four arrays of time x space data values for given variable
+    for scenario in scenarios
+        temperature = regression_variable(scenario) #this gets the list of temps to regress onto
+        a, b = ensemble_averaging(scenario, field_name; ensemble_members = 45, return_std=true) #gets the ensemble avg for that var? #changed this 
+        push!(temperatures, temperature)
+        push!(fields, a[:,:,:,:]) # stds for all months
+    end
+end
+
+mean_stds = zeros(Float32, 192, 96, 12, length(scenarios))
+for scenario_index in 1:4
+    for month in 1:12
+        mean_stds[:, :, month, scenario_index] = mean(fields[scenario_index][:, :, :, month], dims=3)
+    end
+end
+
+relative_to_stds = emulated_truth_month_error ./ mean_stds
+
+for month in 1:12
+     fig = Figure(; resolution)
+    nlongitude = longitude .- 180
+    scenario_index = 1
+    cmap = Reverse(:linear_tritanopic_krjcw_5_98_c46_n256) #:plasma
+    # cmap = :balance
+    ax = GeoAxis(fig[1,1]; title = "Historical", common_options...)
+    field = relative_to_stds[:, :, month, scenario_index]
+    shifted_field = circshift(field, (96, 0))
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
+    hidedecorations!(ax)
+    scenario_index = 2 
+    ax = GeoAxis(fig[1,2]; title = "SSP5-8.5", common_options...)
+    field = relative_to_stds[:, :, month, scenario_index]
+    shifted_field = circshift(field, (96, 0))
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
+    hidedecorations!(ax)
+    scenario_index = 3
+    ax = GeoAxis(fig[2,1]; title = "SSP1-1.9", common_options...)
+    field = relative_to_stds[:, :, month, scenario_index]
+    shifted_field = circshift(field, (96, 0))
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
+    hidedecorations!(ax)
+    scenario_index = 4
+    ax = GeoAxis(fig[2,2]; title = "SSP2-4.5", common_options...)
+    field = relative_to_stds[:, :, month, scenario_index]
+    shifted_field = circshift(field, (96, 0))
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
+    Colorbar(fig[1:2,3], colormap=cmap, colorrange=(0, 1), height = Relative(2/4), label = "(dimensionless)", labelsize = legend_ls, ticklabelsize = legend_ls)
+    hidedecorations!(ax)
+    save(figure_directory * "relative_to_std_tas_$(month)_ens45.png", fig)
+    display(fig)
+end
+
+relative_to_stds_avg = zeros(Float32, 192, 96, 12, 4)
+for scenario_index in 1:4
+    tmp = emulated_truth_error[scenario_index] ./ fields[scenario_index] 
+    N = length(temperatures[scenario_index])
+    relative_to_stds_avg[:, :, :, scenario_index] = mean(tmp, dims=3) # average over the years
+end
+
+hfile = h5open(save_directory * "relative_to_stds.hdf5", "w")
+hfile["relative_to_stds"] = relative_to_stds
+hfile["relative_to_stds_avg"] = relative_to_stds_avg
+close(hfile)
+
+
+for month in 1:12
+     fig = Figure(; resolution)
+    nlongitude = longitude .- 180
+    scenario_index = 1
+    cmap = Reverse(:linear_tritanopic_krjcw_5_98_c46_n256) #:plasma
+    # cmap = :balance
+    ax = GeoAxis(fig[1,1]; title = "Historical", common_options...)
+    field = relative_to_stds_avg[:, :, month, scenario_index]
+    shifted_field = circshift(field, (96, 0))
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
+    hidedecorations!(ax)
+    scenario_index = 2 
+    ax = GeoAxis(fig[1,2]; title = "SSP5-8.5", common_options...)
+    field = relative_to_stds_avg[:, :, month, scenario_index]
+    shifted_field = circshift(field, (96, 0))
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
+    hidedecorations!(ax)
+    scenario_index = 3
+    ax = GeoAxis(fig[2,1]; title = "SSP1-1.9", common_options...)
+    field = relative_to_stds_avg[:, :, month, scenario_index]
+    shifted_field = circshift(field, (96, 0))
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
+    hidedecorations!(ax)
+    scenario_index = 4
+    ax = GeoAxis(fig[2,2]; title = "SSP2-4.5", common_options...)
+    field = relative_to_stds_avg[:, :, month, scenario_index]
+    shifted_field = circshift(field, (96, 0))
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
+    Colorbar(fig[1:2,3], colormap=cmap, colorrange=(0, 1), height = Relative(2/4), label = "(dimensionless)", labelsize = legend_ls, ticklabelsize = legend_ls)
+    hidedecorations!(ax)
+    save(figure_directory * "relative_to_std_avg_tas_$(month)_ens45.png", fig)
     display(fig)
 end
