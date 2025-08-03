@@ -1,2 +1,2 @@
 # GaussianEarth
-Code for "A Statistical Emulator Design for Averaged Climate Fields"
+Code for "An EOF-Based Emulator of Means and Covariances of Monthly Climate Fields"
