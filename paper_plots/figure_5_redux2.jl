@@ -20,6 +20,7 @@ longitude = read(hfile["longitude"])
 metric = read(hfile["metric"])
 close(hfile)
 sqrt_f_metric = sqrt.(reshape(metric, 192 * 96))
+
 if process_data 
     tas_fields = []
     temperatures = []
@@ -219,6 +220,8 @@ for scenario_index in 1:4
     end
 end
 
+year_mean_stds = mean(mean_stds, dims=3)[:,:,1,:] # average over the 12 months
+
 relative_to_stds = emulated_truth_month_error ./ mean_stds
 
 for month in 1:12
@@ -301,3 +304,38 @@ for month in 1:12
     save(figure_directory * "relative_to_std_avg_tas_$(month)_ens45.png", fig)
     display(fig)
 end
+
+#######
+
+fig = Figure(; resolution)
+nlongitude = longitude .- 180
+scenario_index = 1
+cmap = Reverse(:linear_tritanopic_krjcw_5_98_c46_n256) #:plasma
+# cmap = :balance
+ax = GeoAxis(fig[1,1]; title = "Historical", common_options...)
+field = year_mean_stds[:, :,  scenario_index]
+shifted_field = circshift(field, (96, 0))
+crange = extrema(year_mean_stds)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading)
+hidedecorations!(ax)
+scenario_index = 2 
+ax = GeoAxis(fig[1,2]; title = "SSP5-8.5", common_options...)
+field = year_mean_stds[:, :,  scenario_index]
+shifted_field = circshift(field, (96, 0))
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading)
+hidedecorations!(ax)
+scenario_index = 3
+ax = GeoAxis(fig[2,1]; title = "SSP1-1.9", common_options...)
+field = year_mean_stds[:, :,  scenario_index]
+shifted_field = circshift(field, (96, 0))
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading)
+hidedecorations!(ax)
+scenario_index = 4
+ax = GeoAxis(fig[2,2]; title = "SSP2-4.5", common_options...)
+field = year_mean_stds[:, :,  scenario_index]
+shifted_field = circshift(field, (96, 0))
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading)
+Colorbar(fig[1:2,3], colormap=cmap, colorrange=crange, height = Relative(2/4), label = "temperature standard deviation (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
+hidedecorations!(ax)
+save(figure_directory * "tas_averaged_std.png", fig)
+display(fig)

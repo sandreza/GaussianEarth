@@ -1,5 +1,5 @@
 #the actual code for the case study figure
-plot_divergence = false
+plot_divergence = true
 
 ts = 60
 xls = 70 
@@ -89,6 +89,10 @@ if plot_divergence
     #get divergences
     divs_tas = zeros(Float32, (length(observables), length(new_scenario)))
     divs_hurs = zeros(Float32, (length(observables), length(new_scenario)))
+    vals_tas = zeros(Float32, (length(observables), length(new_scenario), 2))
+    vals_hurs = zeros(Float32, (length(observables), length(new_scenario), 2))
+    stds_tas = zeros(Float32, (length(observables), length(new_scenario), 2))
+    stds_hurs = zeros(Float32, (length(observables), length(new_scenario), 2))
 
     for (i, year) in ProgressBar(enumerate(2015:2100))
         emulator.month[1] = month
@@ -109,10 +113,16 @@ if plot_divergence
             # divergence of new scenario from ssp5
             divs_tas[j, i] = kl_div(tasmean[j], tasstd[j], tasmean_ssp5[j], tasstd_ssp5[j])
             divs_hurs[j, i] = kl_div(hursmean[j], hursstd[j], hursmean_ssp5[j], hursstd_ssp5[j])
+            vals_tas[j, i, :] = [tasmean[j], tasmean_ssp5[j]] #first the new scenario, then ssp5
+            vals_hurs[j, i, :] = [hursmean[j], hursmean_ssp5[j]]
+            stds_tas[j, i, :] = [tasstd[j], tasstd_ssp5[j]]
+            stds_hurs[j, i, :] = [hursstd[j], hursstd_ssp5[j]]    
         end
     end
 end
 
+
+### original figure code
 fig = Figure(; resolution)
 observable_names_base = ["NW India", "Midwest US"]
 month_string = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -196,6 +206,61 @@ for i in eachindex(observables)
     end
 
 end
+
+
+
+
+#####
+fig = Figure(; resolution)
+observable_names_base = ["NW India", "Midwest US"]
+month_string = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+observable_names = observable_names_base  .* [" (" * month_string[month] * ")"]
+xticks = (1:12, month_string)
+num_stds = 2
+common_options_1 = (;)# xlabel = "Temperature (K)")
+common_options_2 = (;)# xlabel = "Relative Humidity (%)")
+ax0 = Axis(fig[1,1]; common_options_1..., global_common_options..., xlabel="Year", ylabel="GMT (K)", title="Global Mean Temperature") # xticks=1850:50:2100
+lines!(ax0, 2015:2100, new_scenario, color = :blue, linewidth = lw, label = "New Scenario")
+lines!(ax0, 2015:2100, ssp5, color = :red, linewidth = lw, label = "SSP5-8.5")
+lines!(ax0, 2015:2100, ssp2, color = :magenta3, linewidth = lw,linestyle=:dash, label = "SSP2-4.5")
+axislegend(ax0, position = :lt, labelsize = legend_ls)
+
+for i in eachindex(observables)
+    if plot_divergence
+        if i == 2 #only plot once to avoid overplotting
+            ax1 = Axis(fig[1, 2*i-1]; title = month_string[month], common_options_1..., global_common_options..., ylabel = "D")
+            ax2 = Axis(fig[2, 2*i-1]; title = month_string[month], common_options_2..., global_common_options..., ylabel = "D")
+            
+            # plot divergences
+            lines!(ax1, 2015:2100, divs_tas[1, :], color = :green, linewidth = lw, label = observable_names_base[1])
+            lines!(ax1, 2015:2100, divs_tas[2, :], color = :purple, linewidth = lw, label =observable_names_base[2])
+            lines!(ax2, 2015:2100, divs_hurs[1, :], color = :green, linewidth = lw, label = observable_names_base[1])
+            lines!(ax2, 2015:2100, divs_hurs[2, :], color = :purple, linewidth = lw, label = observable_names_base[2])
+        end
+        if i == 2
+            axislegend(ax1, position = :lt, labelsize = legend_ls)
+        end
+    end
+
+                                                                            ## fix hardcoding! vv
+    ax3 = Axis(fig[1, plot_divergence ? 2*i : i+1]; title = observable_names_base[i] * " (Jan)", common_options_1..., global_common_options..., ylabel = "Temperature (K)") # fig[1, 2*i] if including divergences
+    ax4 = Axis(fig[2, plot_divergence ? 2*i : i+1]; title = observable_names_base[i] * " (Jan)", common_options_2..., global_common_options..., ylabel = "Relative Humidity (%)")
+    lines!(ax3, 2015:2100, vals_tas[i, :, 1], color = :blue, linewidth = lw)
+    band!(ax3, 2015:2100, vals_tas[i, :, 1] .- num_stds .* stds_tas[i, :, 1], vals_tas[i, :, 1] .+ num_stds .* stds_tas[i, :, 1], color = (:blue, 0.2), label = "New Scenario")
+    lines!(ax4, 2015:2100, vals_hurs[i, :, 1], color = :blue, linewidth = lw)
+    band!(ax4, 2015:2100, vals_hurs[i, :, 1] .- num_stds .* stds_hurs[i, :, 1], vals_hurs[i, :, 1] .+ num_stds .* stds_hurs[i, :, 1], color = (:blue, 0.2))
+
+    lines!(ax3, 2015:2100, vals_tas[i, :, 2], color = :orangered, linewidth = lw)
+    band!(ax3, 2015:2100, vals_tas[i, :, 2] .- num_stds .* stds_tas[i, :, 2], vals_tas[i, :, 2] .+ num_stds .* stds_tas[i, :, 2], color = (:orangered, 0.2), label = "SSP5-8.5")
+    lines!(ax4, 2015:2100, vals_hurs[i, :, 2], color = :orangered, linewidth = lw)
+    band!(ax4, 2015:2100, vals_hurs[i, :, 2] .- num_stds .* stds_hurs[i, :, 2], vals_hurs[i, :, 2] .+ num_stds .* stds_hurs[i, :, 2], color = (:orangered, 0.2))
+    if i == 1
+        axislegend(ax3, position = :lt, labelsize = legend_ls)
+    end
+
+end
+
+
 display(fig)
 if plot_divergence
     save(figure_directory * "case_study_divergence.png", fig)
