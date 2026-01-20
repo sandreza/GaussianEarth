@@ -34,7 +34,7 @@ include("figure_3.jl")
 include("figure_4.jl")
 include("figure_5.jl")
 include("figure_6.jl")
-include("figure_7.jl")
+include("figure_7.jl") # zonal average + location histograms
 include("figure_8.jl")
 include("figure_9_land_sea_redux.jl")
 include("figure_10_redux.jl")
