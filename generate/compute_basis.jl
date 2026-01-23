@@ -3,11 +3,12 @@ using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
 save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
 data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
 
+# select historical scenario for basis computation
 scenario_directories = readdir(data_directory)
-scenario_directory = scenario_directories[1]
+scenario_directory = scenario_directories[1] # data directory must have scenario-named subdirectories
 
 current_path = joinpath(data_directory, scenario_directory)
-variable_directories = readdir(current_path)
+variable_directories = readdir(current_path) # each scenario directory must have variable-named subdirectories
 
 @info "Computing basis for all variables"
 for variable_directory in ProgressBar(variable_directories)

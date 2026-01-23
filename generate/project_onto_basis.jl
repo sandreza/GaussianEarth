@@ -18,7 +18,7 @@ for scenario in ProgressBar(scenario_directories)
         file_names = readdir(local_current_path)
 
         if length(file_names) > 0 # sometimes the directory is empty
-            file_name = file_names[1] # pick the first file for obtaining varaibles
+            file_name = file_names[1] # pick the first file for obtaining variables
             file_path = joinpath(local_current_path, file_name)
 
             ds = Dataset(file_path)
@@ -51,7 +51,7 @@ for scenario in ProgressBar(scenario_directories)
             end
             ensemble_standard_deviation = sqrt.(abs.(ensemble_second_moment .- (ensemble_mean .^ 2) ) ) / (length(file_names) - 1) * length(file_names)
 
-            hfile = h5open(save_directory * field_name * "_" * scenario * "_projection.hdf5", "w")
+            hfile = h5open(save_directory * field_name * "_" * scenario * "_projection.hdf5", "w") #this is only used in figure 1...
             hfile["projection"] = projection
             hfile["global mean"] = global_mean
             hfile["ensemble mean"] = ensemble_mean

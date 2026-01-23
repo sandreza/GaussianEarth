@@ -7,7 +7,7 @@ scenario_directories = readdir(data_directory)
 field_name = "tas"
 
 gmt = []
-regression_file = h5open(save_directory * field_name * "_ensemble_yearly_average.hdf5", "w")
+regression_file = h5open(save_directory * field_name * "_ensemble_yearly_average.hdf5", "w") #I'm not sure this is ever used...
 for scenario in ProgressBar(scenario_directories)
     hfile = h5open(save_directory * field_name * "_" * scenario * "_projection.hdf5", "r")
     global_mean = read(hfile["global mean"])

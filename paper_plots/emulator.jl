@@ -1,3 +1,5 @@
+# construct the Gaussian emulator from the saved regression coefficients and covariance factors
+
 using CairoMakie
 using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
 using LinearAlgebra
@@ -56,8 +58,8 @@ close(qfile)
 hfile["mean_quadratic"] = μmodel
 close(hfile)
 
-##
-emulator = GaussianEmulator(μmodel, Lmodel, basis) #defaults to quadratic
+## construct the emulator to be used in any further analysis that calls this script
+emulator = GaussianEmulator(μmodel, Lmodel, basis) #defaults to quadratic ## because we defined μmodel from the quadratic regression above
 mean_field = mean(emulator)
 variance_field = variance(emulator)
 mean_modes = mode_mean(emulator)

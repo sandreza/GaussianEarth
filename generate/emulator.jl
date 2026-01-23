@@ -4,7 +4,8 @@ using LinearAlgebra
 
 include("utils.jl")
 ##
-save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
+# save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
+save_directory = "/net/fs06/d3/mgeo/GaussianEarthData/"
 data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
 scenario_directories = readdir(data_directory)
 current_path = joinpath(data_directory, scenario_directories[1])
@@ -41,6 +42,19 @@ hfile["mean"] = μmodel
 hfile["L model"] = Lmodel
 hfile["basis"] = basis
 hfile["scale factor"] = 273 
+
+## added the below, neeed to check that it works ## note that utils in generate doesn't handle quadratic emulators yet (but it should!)
+rC = []
+qfile = h5open(save_directory * field * "_mean_regression_quadratic.hdf5", "r")
+for month in 1:12
+    regression_coefficients = read(qfile["regression_coefficients $month"])
+    push!(rC, regression_coefficients)
+end
+close(qfile)
+
+μmodel = zeros(Float32, size(rC[1])..., 12)
+[μmodel[:, :, i] .= rC[i] for i in 1:12]
+hfile["mean_quadratic"] = μmodel
 close(hfile)
 
 ##
