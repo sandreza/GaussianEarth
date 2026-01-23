@@ -1,139 +1,194 @@
-ts = 40
-xls = 40 
-yls = 40
-tls = 40
-legend_ls = 35
-resolution = (3000, 1000)
-common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
+using CairoMakie
+using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
+using LinearAlgebra
+using Printf, Distributions, Random
 
-if process_data 
-    month = 1
-    field = "tas"
+ts = 60
+xls = 70 
+yls = 70
+tls = 70
+legend_ls = 70
+resolution = (400, 150) .* 12
+lw = 7
+global_common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 
-    hfile = h5open(save_directory * field * "_basis.hdf5", "r")
-    latitude = read(hfile["latitude"])
-    longitude = read(hfile["longitude"])
-    metric = read(hfile["metric"])
-    close(hfile)
-    eof_mode, temperature = concatenate_regression(field, ["historical"])
-    eofs = eof_mode[:,:, 1:45] # [1:48..., 50:50...]]
-    historical_field = common_array("historical", field)
-    hfile = h5open(save_directory * field * "_basis.hdf5", "r")
-    latitude = read(hfile["latitude"])
-    longitude = read(hfile["longitude"])
-    metric = read(hfile["metric"])
-    close(hfile)
-    year_inds = 1:(argmin(temperature)-1) # volcano year
-    acceptible_inds_lower = (temperature .> minimum(temperature[year_inds]))
-    acceptible_inds_upper = (temperature .< maximum(temperature[year_inds]))
-    acceptible_inds = acceptible_inds_lower .& acceptible_inds_upper
-    year_inds = collect(eachindex(temperature))[acceptible_inds]
-    modes = 1000 
-    mean_field = mean(emulator; modes)
-    variance_field = variance(emulator; modes)
-    mean_modes = mode_mean(emulator; modes)
-    variance_modes = mode_variance(emulator; modes)
+##
+if process_data
+    include("emulator.jl")
+    include("emulator_hurs.jl")
+    _, temperatures = concatenate_regression("tas", ["ssp119"])
+end
+##
+month = 1
+field = "tas"
+
+hfile = h5open(save_directory * field * "_basis.hdf5", "r")
+latitude = read(hfile["latitude"])
+longitude = read(hfile["longitude"])
+metric = read(hfile["metric"])
+close(hfile)
+fmetric = reshape(metric, (192*96, 1))
+##
+function global_mean_value(field)
+    global_mean_value = sum(field .* fmetric, dims = 1)[1]
+    return global_mean_value
+end
+function global_mean_upper(field)
+    global_mean_value_upper = sum(reshape(field .* fmetric, (192, 96))[:, 49:end, :], dims = (1, 2)) * 2
+    return global_mean_value_upper[1]
+end
+function global_mean_lower(field)
+    global_mean_value_lower = sum(reshape(field .* fmetric, (192, 96))[:, 1:48, :], dims = (1, 2)) * 2
+    return global_mean_value_lower[1]
 end
 
-modes = 1000 
-mean_field = mean(emulator; modes)
-variance_field = variance(emulator; modes)
-mean_modes = mode_mean(emulator; modes)
-variance_modes = mode_variance(emulator; modes)
-
-κs = Float64[]
-ρs = Float64[]
-for mode_number in 1:modes
-    month_eof = eofs[mode_number, month:12:end, :]
-    month_eof = month_eof[year_inds, :][:]
-    μ = mean(month_eof)
-    σ = std(month_eof)
-    κ = kurtosis(month_eof)
-    ρ = skewness(month_eof)
-    push!(κs, κ)
-    push!(ρs, ρ)
+index_1 = [157, 46]
+index_2 = [54, 48]
+index_3 = [19, 87]
+function location_1(field)
+    rfield = reshape(field, (192, 96))
+    return rfield[157, 46]
 end
 
+function location_2(field)
+    rfield = reshape(field, (192, 96))
+    return rfield[54, 48]
+end
 
-kurtosis_max = argmax(κs)
-skewness_max = argmax(ρs)
-kurtosis_min = argmin(κs)
-skewness_min = argmin(ρs)
-gaussian_max = argmin(abs.(κs) + abs.(ρs))
+function location_3(field)
+    rfield = reshape(field, (192, 96))
+    return rfield[19, 87]
+end
 
+##
+min_temp = minimum(temperatures) # 1.0544952f0
+max_temp = maximum(temperatures) # 1.0720718f0
+month = 1
+##
+observables = [location_1, location_2, location_3]
+##
+if process_data
+    historical_tas = common_array("historical", "tas"; ensemble_members = 45)
+    historical_hurs = common_array("historical", "hurs"; ensemble_members = 29)
+    ssp119_tas = common_array("ssp119", "tas"; ensemble_members = 45)
+    ssp119_hurs = common_array("ssp119", "hurs"; ensemble_members = 29)
+    historical_temperatures = regression_variable("historical")
+    ssp119_temperatures = regression_variable("ssp119")
+end
+##
+window = 2 
+increment = 2 * window + 1
+ts = 2015:2100
+indmin = 6
+min_temp = mean(ssp119_temperatures[indmin-window:indmin+window])
+indmax = 81
+max_temp = mean(ssp119_temperatures[indmax-window:indmax+window])
+ts[indmin], ts[indmax]
+##
+month = 1
 fig = Figure(; resolution)
-inds = 1:45
-lower_order_statistics = Vector{Float64}[]
-for (j, mode_number) in enumerate(sort([gaussian_max, skewness_min, skewness_max, kurtosis_min, kurtosis_max]))
-    ax = Axis(fig[1, j]; title = "Mode $mode_number", xlabel = "Amplitude", ylabel = "Probability Density", common_options...)
+observables = [location_1, location_3]
+observable_names_base = [@sprintf("%.2fᵒ, %.2fᵒ ", longitude[tmp[1]], latitude[tmp[2]]) for tmp in [index_1, index_3]]
+observable_names = observable_names_base .* ["(Jan)"]
+for i in eachindex(observables)
+    emulator.month[1] = month
+    emulator.global_mean_temperature[1] = min_temp
+    if i == 1
+        common_options_1 = (; xlabel = "Temperature (K)", ylabel = "PDF")
+    else
+        common_options_1 = (; xlabel = "Temperature (K)")
+    end
+    ax1 = Axis(fig[1, i]; title = observable_names[i], common_options_1..., global_common_options...)
+    rfield = reshape(ssp119_tas[:, :, indmin-window:indmin+window, month, :], (192 * 96, 45 * increment))
+    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    hist!(ax1, tas_hist, bins = 20, color = (:royalblue, 0.2), normalization = :pdf, label = "2020 (SSP1-1.9)")
+    emulator.month[1] = month
+    emulator.global_mean_temperature[1] = max_temp
 
-    month_eof = eofs[mode_number, month:12:end, :]
-    month_eof = month_eof[year_inds, :][:]
-    μ = mean(month_eof)
-    σ = std(month_eof)
-    κ = kurtosis(month_eof)
-    ρ = skewness(month_eof)
-    push!(lower_order_statistics, [μ, σ, κ, ρ])
-    x = range(μ - 4σ, μ + 4σ, length = 100)
-    y = gaussian.(x, μ, σ)
-    hist!(ax, month_eof, bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
-    # lines!(ax, x, y, color = :red)
+    rfield = reshape(ssp119_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
+    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    hist!(ax1, tas_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf, label = "2095 (SSP1-1.9)")
+    if i == 1
+        axislegend(ax1, position = :rt, labelsize = legend_ls)
+    end
+end
 
-    μ = mean_modes[mode_number]
-    σ = sqrt(variance_modes[mode_number])
-    y = gaussian.(x, μ, σ)
-    lines!(ax, x, y, color = :blue, label = "Emulator")
-    xlims!(ax, μ - 4σ, μ + 4σ)
-    if j == 1 
-        axislegend(ax, position = :lt, labelsize = legend_ls)
+observables = [global_mean_upper, global_mean_lower]
+observable_names_base = ["Northern Hemisphere Mean ", "Southern Hemisphere Mean "]
+observable_names = observable_names_base .* ["(Jan)"]
+for i in eachindex(observables)
+    emulator.month[1] = month
+    emulator.global_mean_temperature[1] = min_temp
+    if i == 1
+        common_options_1 = (; xlabel = "Temperature (K)", ylabel = "PDF")
+    else
+        common_options_1 = (; xlabel = "Temperature (K)")
+    end
+    ax1 = Axis(fig[2, i]; title = observable_names[i], common_options_1..., global_common_options...)
+    rfield = reshape(ssp119_tas[:, :, indmin-window:indmin+window, month, :], (192 * 96, 45 * increment))
+    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    hist!(ax1, tas_hist, bins = 20, color = (:royalblue, 0.2), normalization = :pdf, label = "2020 (SSP1-1.9)")
+    emulator.month[1] = month
+    emulator.global_mean_temperature[1] = max_temp
+
+    rfield = reshape(ssp119_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
+    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    hist!(ax1, tas_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf, label = "2095 (SSP1-1.9)")
+    if i == 1
+        # axislegend(ax1, position = :rt, labelsize = legend_ls)
+    end
+end
+
+month = 7
+observables = [location_1, location_3]
+observable_names_base = [@sprintf("%.2fᵒ, %.2fᵒ ", longitude[tmp[1]], latitude[tmp[2]]) for tmp in [index_1, index_3]]
+observable_names = observable_names_base .* ["(Jul)"]
+for i in eachindex(observables)
+    emulator.month[1] = month
+    emulator.global_mean_temperature[1] = min_temp
+    if i == 1
+        common_options_1 = (; xlabel = "Temperature (K)", ylabel = "PDF")
+    else
+        common_options_1 = (; xlabel = "Temperature (K)")
+    end
+    ax1 = Axis(fig[1, i+2]; title = observable_names[i], common_options_1..., global_common_options...)
+    rfield = reshape(ssp119_tas[:, :, indmin-window:indmin+window, month, :], (192 * 96, 45 * increment))
+    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    hist!(ax1, tas_hist, bins = 20, color = (:royalblue, 0.2), normalization = :pdf)
+    emulator.month[1] = month
+    emulator.global_mean_temperature[1] = max_temp
+
+    rfield = reshape(ssp119_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
+    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    hist!(ax1, tas_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf, label = "2050 (Data)")
+end
+
+observables = [global_mean_upper, global_mean_lower]
+observable_names_base = ["Northern Hemisphere Mean ", "Southern Hemisphere Mean "]
+observable_names = observable_names_base .* ["(Jul)"]
+for i in eachindex(observables)
+    emulator.month[1] = month
+    emulator.global_mean_temperature[1] = min_temp
+    if i == 1
+        common_options_1 = (; xlabel = "Temperature (K)", ylabel = "PDF")
+    else
+        common_options_1 = (; xlabel = "Temperature (K)")
+    end
+    ax1 = Axis(fig[2, i+2]; title = observable_names[i], common_options_1..., global_common_options...)
+    rfield = reshape(ssp119_tas[:, :, indmin-window:indmin+window, month, :], (192 * 96, 45 * increment))
+    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    hist!(ax1, tas_hist, bins = 20, color = (:royalblue, 0.2), normalization = :pdf)
+    emulator.month[1] = month
+    emulator.global_mean_temperature[1] = max_temp
+
+    rfield = reshape(ssp119_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
+    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    hist!(ax1, tas_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf, label = "2050 (Data)")
+    if i == 1
+        # axislegend(ax2, position = :lt, labelsize = legend_ls)
     end
 end
 # display(fig)
-# save(figure_directory * field * "_eof_gaussian_with_model.png", fig)
 
-κs = Float64[]
-ρs = Float64[]
-for j in ProgressBar(1:96)
-    for i in 1:192
-        month_field = historical_field[i, j, year_inds, month, :][:]
-        μ = mean(month_field)
-        σ = std(month_field)
-        κ = kurtosis(month_field)
-        ρ = skewness(month_field)
-        push!(κs, κ)
-        push!(ρs, ρ)
-    end
-end
-
-kurtosis_max = argmax(κs)
-skewness_max = argmax(ρs)
-kurtosis_min = argmin(κs)
-skewness_min = argmin(ρs)
-gaussian_max = argmin(abs.(κs) + abs.(ρs))
-
-
-for (j, mode_number) in enumerate(sort([gaussian_max, kurtosis_min, skewness_min, kurtosis_max, skewness_max]))
-    ii = (mode_number-1)%192 + 1
-    jj = (mode_number-1)÷192 + 1
-
-    lat = latitude[jj]
-    lon = longitude[ii]
-    titlestring = @sprintf("%.2fᵒ, %.2fᵒ", lon, lat)
-    ax = Axis(fig[2, j]; title = titlestring, xlabel = "Temperature (K)", ylabel = "Probability Density", common_options...)
-    month_field = historical_field[ii, jj, year_inds, month, :][:]
-    μ = mean(month_field)
-    σ = std(month_field)
-    κ = kurtosis(month_field)
-    ρ = skewness(month_field)
-    push!(lower_order_statistics, [μ, σ, κ, ρ])
-    x = range(μ - 4σ, μ + 4σ, length = 100)
-    y = gaussian.(x, μ, σ)
-    hist!(ax, month_field, bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
-    # lines!(ax, x, y, color = :red, label = "fit")
-    y = gaussian.(x, mean_field[mode_number], sqrt(variance_field[mode_number]))
-    lines!(ax, x, y, color = :blue, label = "Emulator")
-    xlims!(ax, μ - 4σ, μ + 4σ)
-end
-
-save(figure_directory * "check_model_fit_modes_$modes.png", fig)
+save(figure_directory * "figure_2_parametric_assumption_point_global_statistics_tas_jan_july.png", fig)
 @info "Figure 2 generated"

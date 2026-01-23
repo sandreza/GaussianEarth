@@ -43,12 +43,6 @@ if process_data
     eof_mode, temperature = concatenate_regression(field, ["historical", "ssp585"])
     eofs = eof_mode[:,month:12:end, 1:45] 
 
-    # hfile = h5open(save_directory * field * "_mean_regression.hdf5", "r")
-    # regression_coefficients = read(hfile["regression_coefficients 1"])
-    # linear_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
-    # for month in ProgressBar(1:12)
-    #     linear_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
-    # end
     hfile = h5open(save_directory * field * "_mean_regression_quadratic.hdf5", "r")
     regression_coefficients = read(hfile["regression_coefficients 1"])
     quadratic_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
@@ -103,6 +97,6 @@ for (jj, ab) in enumerate([[1, 1], [10, 10], [100, 100], [2, 15]])
     lines!(ax, temperature * scale, covs_model, color = :blue)
 end
 
-save(figure_directory * "regression_check.png", fig)
+save(figure_directory * "figure_3_regression_check.png", fig)
  
 @info "Figure 3 generated"

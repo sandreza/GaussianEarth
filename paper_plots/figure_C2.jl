@@ -61,13 +61,13 @@ for (e, d) in enumerate([10, 100, 1000])
     end
 end
 
-hfile = h5open(figure_directory * field_name * "_full_errors.hdf5", "w") #CHANGE: should be in the save save_directory, properly
+hfile = h5open(save_directory * field_name * "_full_errors.hdf5", "w") 
 write(hfile, "error_historical", error_historical)
 write(hfile, "error_future", error_future)
 close(hfile)
 
-### load in pre-calculated error
-# hfile = h5open(figure_directory * field_name * "_errors.hdf5", "r")
+### load in pre-calculated error (that's saved out above) #EDIT TO REGENERATE IF NONEXISTENT
+# hfile = h5open(save_directory * field_name * "_errors.hdf5", "r")
 # error_historical = read(hfile["error_historical"])
 # error_future = read(hfile["error_future"])
 # close(hfile)

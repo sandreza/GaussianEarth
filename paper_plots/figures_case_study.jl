@@ -12,7 +12,7 @@ global_common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, x
 ##
 
 #load in new scenario
-hfile = h5open("new_scenarios.hdf5", "r")
+hfile = h5open(save_directory * "new_scenarios.hdf5", "r")
 new_scenario = read(hfile["new_scenario"])
 close(hfile)
 new_scenario_temperatures = new_scenario ./273
@@ -131,7 +131,7 @@ lines!(ax0, 2015:2100, ssp5, color = :red, linewidth = lw, label = "SSP5-8.5")
 lines!(ax0, 2015:2100, ssp2, color = :magenta3, linewidth = lw,linestyle=:dash, label = "SSP2-4.5")
 axislegend(ax0, position = :lt, labelsize = legend_ls)
 
-for i in eachindex(observables)
+for i in eachindex(observables) 
     ax3 = Axis(fig[1, i+1]; title = observable_names_base[i] * " (2100)", xticks,xticklabelrotation=45.0, common_options_1..., global_common_options..., ylabel = "Temperature (K)") # fig[1, 2*i] if including divergences
     ax4 = Axis(fig[2, i+1]; title = observable_names_base[i] * " (2100)", xticks,xticklabelrotation=45.0, common_options_2..., global_common_options..., ylabel = "Relative Humidity (%)")
     tasmeanlist = zeros(Float32, 12)

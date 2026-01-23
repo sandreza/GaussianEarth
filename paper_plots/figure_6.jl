@@ -1,80 +1,85 @@
-using GeoMakie 
-
-ts = 60
-xls = 60 
-yls = 60
-tls = 60
-legend_ls = 60
-xlp = 20 
-ylp = 20 
-resolution = (1800, 1200) .* 2
-common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls, xlabelpadding = xlp, ylabelpadding = ylp)
-
+ts = 40
+xls = 40 
+yls = 40
+tls = 40
+legend_ls = 35
+resolution = (300, 140) .* 9
+common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
+ts = 40
+xls = 40 
+yls = 40
+tls = 40
+legend_ls = 35
+common_options_2 = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 if process_data
-    field_name = "tas"
-    hfile = h5open(save_directory * field_name * "_basis.hdf5", "r")
+    month = 1
+    field = "tas"
+
+    hfile = h5open(save_directory * field * "_basis.hdf5", "r")
     latitude = read(hfile["latitude"])
     longitude = read(hfile["longitude"])
     metric = read(hfile["metric"])
     close(hfile)
-    sqrt_f_metric = sqrt.(reshape(metric, 192 * 96))
+
+    eof_mode, temperature = concatenate_regression(field, ["historical"])
+    eofs = eof_mode[:,:, 1:45] # [1:48..., 50:50...]]
+
+    historical_field = common_array("historical", field)
+    hfile = h5open(save_directory * field * "_basis.hdf5", "r")
+    latitude = read(hfile["latitude"])
+    longitude = read(hfile["longitude"])
+    metric = read(hfile["metric"])
+    close(hfile)
+
+    year_inds = 1:(argmin(temperature)-1) # volcano year
+    acceptible_inds_lower = (temperature .> minimum(temperature[year_inds]))
+    acceptible_inds_upper = (temperature .< maximum(temperature[year_inds]))
+    acceptible_inds = acceptible_inds_lower .& acceptible_inds_upper
+    year_inds = collect(eachindex(temperature))[acceptible_inds]
 
     include("emulator.jl")
 
-    tas_fields = []
-    hurs_fields = []
-    temperatures = []
-    scenarios = ["historical"]
-    for scenario in scenarios
-        historical_tas = common_array(scenario, "tas"; ensemble_members = 45)
-        # historical_hurs = common_array(scenario, "hurs"; ensemble_members = 29)
-        historical_temperatures = regression_variable(scenario)
-        push!(tas_fields, historical_tas)
-        # push!(hurs_fields, historical_hurs)
-        push!(temperatures, historical_temperatures)
-    end
+    global_mean_field = mean(historical_field[:, :, year_inds, month, :], dims = 1)[1, :, :, :]
+    latitude_mean = mean(global_mean_field, dims = (2, 3))[:]
+    latitude_std = std(global_mean_field, dims = (2, 3))[:]
+
+    rmetric = reshape(metric, (192, 96, 1, 1, 1))
+    fmetric = reshape(metric, (192 * 96, 1))
+
+    global_mean_basis = mean(reshape(emulator.basis, (192, 96, 1980)), dims = 1)[1, :, 1:1000]
+    Σ = emulator_variance(emulator)
+    mean_modes = mode_mean(emulator; modes = 1000)
+    σs = [sqrt(global_mean_basis[i, :]' * (Σ * global_mean_basis[i,:])) for i in ProgressBar(1:96)]
+    μs = [mean_modes' * global_mean_basis[i, :] for i in 1:96]
 end
 
 ##
-colormap = :balance
-Random.seed!(124)
-year_index = 1
-month_index = 1
-emulator.month[1] = month_index
-emulator.global_mean_temperature[1] = temperatures[1][year_index]
-emulator_mean = mean(emulator)
-crange = (-12, 12)
-fig = Figure(; resolution)
-scenario_index = 1
-ax = GeoAxis(fig[1,1]; title = "1850 January (Data Realization)", common_options...)
-data_realization = tas_fields[1][:, :, year_index, month_index, 1] - mean(tas_fields[1][:, :, year_index, month_index, :] , dims = 3)[:, :, 1]
-nlongitude = range(-180, 180, length = 192)
-ndata_realization = circshift(data_realization, (96, 0))
-surface!(ax, nlongitude, latitude, ndata_realization; colormap = colormap, colorrange = crange, shading = NoShading)
-hidedecorations!(ax)
-
-month_index = 7
-ax = GeoAxis(fig[2, 1]; title = "1850 July (Data Realization)", common_options...)
-data_realization = tas_fields[1][:, :, year_index, month_index, 2]  - mean(tas_fields[1][:, :, year_index, month_index, :] , dims = 3)[:, :, 1]
-ndata_realization = circshift(data_realization, (96, 0))
-surface!(ax, nlongitude, latitude, ndata_realization; colormap = colormap, colorrange = crange, shading = NoShading)
-hidedecorations!(ax)
-
-
-ax2 = GeoAxis(fig[1, 2]; title = "1850 January (Emulator Realization)", common_options...)
-emulator_realization = rand(emulator) - mean(emulator)
-r_emulator_realization = reshape(emulator_realization, (192, 96))
-nemulator_realization = circshift(r_emulator_realization, (96, 0))
-surface!(ax2, nlongitude, latitude, nemulator_realization; colormap = colormap, colorrange = crange, shading = NoShading)
-hidedecorations!(ax2)
-
-month_index = 7
-emulator.month[1] = month_index
-ax2 = GeoAxis(fig[2,2]; title = "1850 July (Emulator Realization)", common_options...)
-emulator_realization = rand(emulator) - mean(emulator)
-r_emulator_realization = reshape(emulator_realization, (192, 96))
-nemulator_realization = circshift(r_emulator_realization, (96, 0))
-surface!(ax2, nlongitude, latitude, nemulator_realization; colormap = colormap, colorrange = crange, shading = NoShading)
-Colorbar(fig[1:2,3], label = "Temperature Fluctuation (K)", colorrange = crange, colormap = colormap, height = Relative(2/4), labelsize = legend_ls, ticklabelsize = legend_ls)
-hidedecorations!(ax2)
-save(figure_directory * "tas_realization_comparison.png", fig)
+fig = Figure(; resolution) 
+ga = fig[1, 1] = GridLayout()
+ax = Axis(ga[1,1]; title = "Zonal Average (Data)", ylabel = "Temperature (K)", xlabel = "Latitude", common_options...)
+lines!(ax, latitude[1:96], latitude_mean, color = :purple, label = "data")
+band!(ax, latitude[1:96], latitude_mean .- 3 * latitude_std, latitude_mean .+ 3 * latitude_std, color = (:purple, 0.2))
+ylims!(ax, 220, 310)
+ax = Axis(ga[1,2]; title = "Zonal Average (Emulator)", xlabel = "Latitude", common_options...)
+lines!(ax, latitude[1:96], μs, color = :blue, label = "data")
+band!(ax, latitude[1:96], μs .- 3 * σs, μs .+ 3 * σs, color = (:blue, 0.2))
+ylims!(ax, 220, 310)
+gb = fig[2, 1] = GridLayout()
+for (i, lat_index) in enumerate([1, 24, 48, 72, 96])
+    latitude_string = @sprintf("Latitude %.2f", latitude[lat_index])
+    if i == 1
+        ax = Axis(gb[1,i]; xlabel = "Temperature (K)", ylabel = "Probability Density", title = latitude_string, common_options_2...)
+    else
+        ax = Axis(gb[1,i]; xlabel = "Temperature (K)", title = latitude_string, common_options_2...)
+    end
+    σ = σs[lat_index]
+    μ = μs[lat_index]
+    x = range(μ - 4σ, μ + 4σ, length = 100)
+    y = gaussian.(x, μ, σ)
+    hist!(ax, global_mean_field[lat_index, :, :][:], bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
+    lines!(ax, x, y, color = :blue, label = "Emulator")
+    if i == 1
+        axislegend(ax, position = :lt, labelsize = legend_ls)
+    end
+end
+save(figure_directory * "figure_6_latitude_mean_model_emulator_locations_together.png", fig)

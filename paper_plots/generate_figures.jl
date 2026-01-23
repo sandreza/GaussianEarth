@@ -28,16 +28,20 @@ variance_field = variance(emulator)
 mean_modes = mode_mean(emulator)
 variance_modes = mode_variance(emulator)
 
-include("figure_1.jl")
-include("figure_2.jl")
-include("figure_3.jl")
-include("figure_4.jl")
-include("figure_5.jl")
-include("figure_6.jl")
-include("figure_7.jl") # zonal average + location histograms
-include("figure_8.jl")
-include("figure_9_land_sea_redux.jl")
-include("figure_10_redux.jl")
-include("parametric_assumption_redux.jl")
-include("generate_new_scenario_redux.jl")
-include("case_study_redux3.jl")
+include("figure_1.jl") # gmt in mpi ensemble ✅
+include("figure_2.jl") # parametric assumption ✅
+include("figure_3.jl") # regression check ✅
+include("figure_4.jl") # emulator error maps ✅
+include("figure_5.jl") # std maps ✅
+include("figure_6.jl") # zonal average + location histograms ✅
+include("figure_7.jl") # histograms ssp245 land/ocean ✅
+include("figure_8.jl") # histograms ssp245 locations ✅
+include("generate_new_scenario.jl") ## MOVE TO GENERATE ✅
+include("figures_case_study.jl")
+include("figure_A1.jl") # check model fits
+include("figure_B1.jl")
+include("figure_B2.jl") # linear emulator error maps ✅
+include("figure_C1.jl") # linear mean error  ✅
+include("figure_C2.jl") # regression std error
+include("figure_D1.jl") # global + hemisphere seasonal ✅ #relies on pre-loaded "emulator" --> should probably standardize to not this, but performance?
+include("figures_D45.jl") # emulated vs mpi comparison ✅

@@ -3,6 +3,7 @@ time_history = 1850:2014
 time_future = 2015:2100
 scenario_colors = Dict("historical" => :red4, "ssp585" => :red, "ssp245" => :magenta3, "ssp119" => :indigo)
 scenario_labels = ["Historical","SSP1-1.9",  "SSP2-4.5", "SSP5-8.5"]
+field_name = "tas"
 
 baseline = 0.0
 fig = Figure(resolution=(600, 400))
@@ -34,4 +35,4 @@ end
 axislegend(ax, position=:lt)
 save(figure_directory*"figure_1.png", fig)
 # display(fig)
-
+@info "Figure 1 generated"

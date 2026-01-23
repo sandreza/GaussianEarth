@@ -11,17 +11,11 @@ ssp2 = regression_variable("ssp245").*273
 
 new_scenario = zeros(length(time_future))
 n= length(time_future) 
-
-# k = 10 
-# for (t, i) in enumerate(1:length(time_future))
-#     new_scenario[i] = init_temp + (end_temp - init_temp) * (log(1 + k * t) / log(1 + k * n))
-# end
-
 for t in 1:length(time_future)
     new_scenario[t] = init_temp * (end_temp / init_temp) ^ ((t - 1) / (n - 1)) 
 end
 
-# Print or plot the scenarios
+# plot the scenarios
 fig = Figure()
 ax = Axis(fig[1,1], xlabel="Year", ylabel="Global Mean Temperature (K)", xticks=1850:50:2100)
 lines!(ax, time_future, new_scenario, label="Scenario 1", color=:blue)
@@ -30,6 +24,6 @@ lines!(ax, time_future, ssp2, label="SSP2-4.5", color=:purple, linestyle=:dash)
 axislegend(ax, position=:lt)
 display(fig)
 
-hfile = h5open("new_scenarios.hdf5", "w")
+hfile = h5open(save_directory * "new_scenarios.hdf5", "w")
 write(hfile, "new_scenario", new_scenario)
 close(hfile)
