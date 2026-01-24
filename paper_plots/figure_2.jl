@@ -1,8 +1,3 @@
-using CairoMakie
-using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
-using LinearAlgebra
-using Printf, Distributions, Random
-
 ts = 60
 xls = 70 
 yls = 70

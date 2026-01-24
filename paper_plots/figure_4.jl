@@ -1,5 +1,3 @@
-using GeoMakie 
-
 ts = 60
 xls = 60 
 yls = 60

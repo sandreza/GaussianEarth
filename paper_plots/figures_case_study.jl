@@ -1,4 +1,3 @@
-#the actual code for the case study figure
 plot_divergence = true
 
 ts = 60

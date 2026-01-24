@@ -1,6 +1,3 @@
-using CairoMakie, Statistics, ProgressBars
-using Printf
-
 ts = 30
 xls = 40 
 yls = 40

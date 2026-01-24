@@ -3,7 +3,7 @@ process_data = true
 
 using CairoMakie, Printf, GeoMakie
 using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
-using LinearAlgebra, Distributions
+using LinearAlgebra, Distributions, Random
 
 # save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
 save_directory = "/net/fs06/d3/mgeo/GaussianEarthData/"
@@ -36,7 +36,7 @@ include("figure_5.jl") # std maps ✅
 include("figure_6.jl") # zonal average + location histograms ✅
 include("figure_7.jl") # histograms ssp245 land/ocean ✅
 include("figure_8.jl") # histograms ssp245 locations ✅
-include("generate_new_scenario.jl") ## MOVE TO GENERATE ✅
+include("generate_new_scenario.jl") # ✅
 include("figures_case_study.jl")
 include("figure_A1.jl") # check model fits
 include("figure_B1.jl")

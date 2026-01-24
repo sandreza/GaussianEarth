@@ -1,7 +1,3 @@
-#figure 5 but its a difference map
-
-using GeoMakie 
-
 ts = 60
 xls = 60 
 yls = 60
