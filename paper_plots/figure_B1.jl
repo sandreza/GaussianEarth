@@ -59,7 +59,7 @@ end
 
 # repeat for quadratic
 if process_data
-    hfile = h5open("./figures/" * field_name * "_mean_regression_quadratic.hdf5", "r")
+    hfile = h5open(save_directory * field_name * "_mean_regression_quadratic.hdf5", "r")
     regression_coefficients = read(hfile["regression_coefficients 1"])
     quadratic_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
     for month in ProgressBar(1:12)

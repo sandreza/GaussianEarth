@@ -18,7 +18,7 @@ end
 month = 1
 field = "tas"
 
-hfile = h5open("/net/fs06/d3/sandre/GaussianEarthData/land_sea_mask.hdf5", "r") # where does this come from?
+hfile = h5open(save_directory * "land_sea_mask.hdf5", "r") # where does this come from?
 mask = read(hfile["mask"]) .> 0.5
 close(hfile)
 
