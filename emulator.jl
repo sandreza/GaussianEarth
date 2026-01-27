@@ -1,4 +1,4 @@
-# construct the Gaussian emulator from the saved regression coefficients and covariance factors
+# construct the emulator from the saved regression coefficients and covariance factors
 
 using CairoMakie
 using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
@@ -7,9 +7,6 @@ using LinearAlgebra
 include("utils.jl")
 ## save_directory = "PLEASE/SET/YOUR/SAVE/PATH/HERE/" ## if being used standalone
 ## data_directory = "PLEASE/SET/YOUR/DATA/PATH/HERE/"
-scenario_directories = readdir(data_directory)
-current_path = joinpath(data_directory, scenario_directories[1])
-variable_directories = readdir(current_path)
 
 ##
 field = "tas"
@@ -67,7 +64,7 @@ else
 end
 
 ## construct the emulator to be used in any further analysis that calls this script
-emulator = GaussianEmulator(μmodel_quadratic, Lmodel, basis) #defaults to quadratic ## because we defined μmodel from the quadratic regression above
+emulator = CovarEmulator(μmodel_quadratic, Lmodel, basis) #defaults to quadratic ## because we defined μmodel from the quadratic regression above
 mean_field = mean(emulator)
 variance_field = variance(emulator)
 mean_modes = mode_mean(emulator)

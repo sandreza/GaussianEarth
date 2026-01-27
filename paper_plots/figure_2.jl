@@ -9,6 +9,9 @@ global_common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, x
 
 ##
 if process_data
+    use_bundle = @isdefined(use_ground_truth_bundle) ? use_ground_truth_bundle : false
+    bundle_path = @isdefined(ground_truth_bundle_path) ? ground_truth_bundle_path : get_ground_truth_bundle_path()
+
     include("../emulator.jl")
     include("../emulator_hurs.jl")
     _, temperatures = concatenate_regression("tas", ["ssp119"])
@@ -23,6 +26,12 @@ longitude = read(hfile["longitude"])
 metric = read(hfile["metric"])
 close(hfile)
 fmetric = reshape(metric, (192*96, 1))
+##
+if process_data && use_bundle && has_ground_truth_bundle(bundle_path)
+    function f2_samples(month, key, level)
+        return read_ground_truth("samples/figure_2/month_$month/$key/$level"; bundle_path)
+    end
+end
 ##
 function global_mean_value(field)
     global_mean_value = sum(field .* fmetric, dims = 1)[1]
@@ -63,10 +72,12 @@ month = 1
 observables = [location_1, location_2, location_3]
 ##
 if process_data
-    historical_tas = common_array("historical", "tas"; ensemble_members = 45)
-    historical_hurs = common_array("historical", "hurs"; ensemble_members = 29)
-    ssp119_tas = common_array("ssp119", "tas"; ensemble_members = 45)
-    ssp119_hurs = common_array("ssp119", "hurs"; ensemble_members = 29)
+    if !(use_bundle && has_ground_truth_bundle(bundle_path))
+        historical_tas = common_array("historical", "tas"; ensemble_members = 45)
+        historical_hurs = common_array("historical", "hurs"; ensemble_members = 29)
+        ssp119_tas = common_array("ssp119", "tas"; ensemble_members = 45)
+        ssp119_hurs = common_array("ssp119", "hurs"; ensemble_members = 29)
+    end
     historical_temperatures = regression_variable("historical")
     ssp119_temperatures = regression_variable("ssp119")
 end
@@ -94,14 +105,24 @@ for i in eachindex(observables)
         common_options_1 = (; xlabel = "Temperature (K)")
     end
     ax1 = Axis(fig[1, i]; title = observable_names[i], common_options_1..., global_common_options...)
-    rfield = reshape(ssp119_tas[:, :, indmin-window:indmin+window, month, :], (192 * 96, 45 * increment))
-    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    if use_bundle && has_ground_truth_bundle(bundle_path)
+        key = i == 1 ? "loc_157_46" : "loc_19_87"
+        tas_hist = f2_samples(month, key, "low")
+    else
+        rfield = reshape(ssp119_tas[:, :, indmin-window:indmin+window, month, :], (192 * 96, 45 * increment))
+        tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    end
     hist!(ax1, tas_hist, bins = 20, color = (:royalblue, 0.2), normalization = :pdf, label = "2020 (SSP1-1.9)")
     emulator.month[1] = month
     emulator.global_mean_temperature[1] = max_temp
 
-    rfield = reshape(ssp119_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
-    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    if use_bundle && has_ground_truth_bundle(bundle_path)
+        key = i == 1 ? "loc_157_46" : "loc_19_87"
+        tas_hist = f2_samples(month, key, "high")
+    else
+        rfield = reshape(ssp119_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
+        tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    end
     hist!(ax1, tas_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf, label = "2095 (SSP1-1.9)")
     if i == 1
         axislegend(ax1, position = :rt, labelsize = legend_ls)
@@ -120,14 +141,24 @@ for i in eachindex(observables)
         common_options_1 = (; xlabel = "Temperature (K)")
     end
     ax1 = Axis(fig[2, i]; title = observable_names[i], common_options_1..., global_common_options...)
-    rfield = reshape(ssp119_tas[:, :, indmin-window:indmin+window, month, :], (192 * 96, 45 * increment))
-    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    if use_bundle && has_ground_truth_bundle(bundle_path)
+        key = i == 1 ? "upper" : "lower"
+        tas_hist = f2_samples(month, key, "low")
+    else
+        rfield = reshape(ssp119_tas[:, :, indmin-window:indmin+window, month, :], (192 * 96, 45 * increment))
+        tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    end
     hist!(ax1, tas_hist, bins = 20, color = (:royalblue, 0.2), normalization = :pdf, label = "2020 (SSP1-1.9)")
     emulator.month[1] = month
     emulator.global_mean_temperature[1] = max_temp
 
-    rfield = reshape(ssp119_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
-    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    if use_bundle && has_ground_truth_bundle(bundle_path)
+        key = i == 1 ? "upper" : "lower"
+        tas_hist = f2_samples(month, key, "high")
+    else
+        rfield = reshape(ssp119_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
+        tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    end
     hist!(ax1, tas_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf, label = "2095 (SSP1-1.9)")
     if i == 1
         # axislegend(ax1, position = :rt, labelsize = legend_ls)
@@ -147,14 +178,24 @@ for i in eachindex(observables)
         common_options_1 = (; xlabel = "Temperature (K)")
     end
     ax1 = Axis(fig[1, i+2]; title = observable_names[i], common_options_1..., global_common_options...)
-    rfield = reshape(ssp119_tas[:, :, indmin-window:indmin+window, month, :], (192 * 96, 45 * increment))
-    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    if use_bundle && has_ground_truth_bundle(bundle_path)
+        key = i == 1 ? "loc_157_46" : "loc_19_87"
+        tas_hist = f2_samples(month, key, "low")
+    else
+        rfield = reshape(ssp119_tas[:, :, indmin-window:indmin+window, month, :], (192 * 96, 45 * increment))
+        tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    end
     hist!(ax1, tas_hist, bins = 20, color = (:royalblue, 0.2), normalization = :pdf)
     emulator.month[1] = month
     emulator.global_mean_temperature[1] = max_temp
 
-    rfield = reshape(ssp119_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
-    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    if use_bundle && has_ground_truth_bundle(bundle_path)
+        key = i == 1 ? "loc_157_46" : "loc_19_87"
+        tas_hist = f2_samples(month, key, "high")
+    else
+        rfield = reshape(ssp119_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
+        tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    end
     hist!(ax1, tas_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf, label = "2050 (Data)")
 end
 
@@ -170,14 +211,24 @@ for i in eachindex(observables)
         common_options_1 = (; xlabel = "Temperature (K)")
     end
     ax1 = Axis(fig[2, i+2]; title = observable_names[i], common_options_1..., global_common_options...)
-    rfield = reshape(ssp119_tas[:, :, indmin-window:indmin+window, month, :], (192 * 96, 45 * increment))
-    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    if use_bundle && has_ground_truth_bundle(bundle_path)
+        key = i == 1 ? "upper" : "lower"
+        tas_hist = f2_samples(month, key, "low")
+    else
+        rfield = reshape(ssp119_tas[:, :, indmin-window:indmin+window, month, :], (192 * 96, 45 * increment))
+        tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    end
     hist!(ax1, tas_hist, bins = 20, color = (:royalblue, 0.2), normalization = :pdf)
     emulator.month[1] = month
     emulator.global_mean_temperature[1] = max_temp
 
-    rfield = reshape(ssp119_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
-    tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    if use_bundle && has_ground_truth_bundle(bundle_path)
+        key = i == 1 ? "upper" : "lower"
+        tas_hist = f2_samples(month, key, "high")
+    else
+        rfield = reshape(ssp119_tas[:, :, indmax-window:indmax+window, month, :], (192 * 96, 45*increment))
+        tas_hist = [observables[i](rfield[:, j]) for j in 1:45*increment]
+    end
     hist!(ax1, tas_hist, bins = 20, color = (:orangered2, 0.2), normalization = :pdf, label = "2050 (Data)")
     if i == 1
         # axislegend(ax2, position = :lt, labelsize = legend_ls)

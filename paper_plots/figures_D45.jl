@@ -1,5 +1,3 @@
-# show_mpi = true
-
 ts = 60
 xls = 60 
 yls = 60
@@ -21,12 +19,20 @@ sqrt_f_metric = sqrt.(reshape(metric, 192 * 96))
 include("../emulator.jl")
 
 ## construct raw fields
+use_bundle = @isdefined(use_ground_truth_bundle) ? use_ground_truth_bundle : false
+bundle_path = @isdefined(ground_truth_bundle_path) ? ground_truth_bundle_path : get_ground_truth_bundle_path()
+
 tas_fields = []
 std_fields = []
 temperatures = []
 scenarios = ["historical", "ssp585", "ssp119", "ssp245"]
 for scenario in scenarios
-    scenario_tas = common_array(scenario, "tas"; ensemble_members = 45)
+    if use_bundle && has_ground_truth_bundle(bundle_path)
+        mean_monthly = read_ground_truth("tas/mean_monthly/$scenario"; bundle_path)
+        scenario_tas = reshape(mean_monthly, size(mean_monthly)..., 1)
+    else
+        scenario_tas = common_array(scenario, "tas"; ensemble_members = 45)
+    end
     push!(tas_fields, scenario_tas)
     scenario_temperatures = regression_variable(scenario)
     push!(temperatures, scenario_temperatures)
@@ -64,42 +70,42 @@ for plot_std in (false, true)
     ax = GeoAxis(fig[1,1]; title = "SSP5-8.5 (Emulator)", common_options...)
     field = plot_std ? emulated_truth_std[:,:, scenario_index] : emulated_truth[:, :, scenario_index]
     shifted_field = circshift(field, (96, 0))
-    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading) 
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = false) 
     hidedecorations!(ax)
     ax = GeoAxis(fig[1,2]; title = "SSP5-8.5 (MPI)", common_options...)
     field = plot_std ? ground_truth_std[:,:, scenario_index] : ground_truth[:, :, scenario_index]
     shifted_field = circshift(field, (96, 0))
-    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading) 
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = false) 
     hidedecorations!(ax)
     scenario_index = 3
     ax = GeoAxis(fig[3,1]; title = "SSP1-1.9 (Emulator)", common_options...)
     field = plot_std ? emulated_truth_std[:,:, scenario_index] : emulated_truth[:, :, scenario_index]
     shifted_field = circshift(field, (96, 0))
-    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading)
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = false)
     hidedecorations!(ax)
     ax = GeoAxis(fig[3,2]; title = "SSP1-1.9 (MPI)", common_options...)
     field = plot_std ? ground_truth_std[:,:, scenario_index] : ground_truth[:, :, scenario_index]
     shifted_field = circshift(field, (96, 0))
-    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading) 
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = false) 
     hidedecorations!(ax)
     scenario_index = 4
     ax = GeoAxis(fig[2,1]; title = "SSP2-4.5 (Emulator)", common_options...)
     field = plot_std ? emulated_truth_std[:,:, scenario_index] : emulated_truth[:, :, scenario_index]
     shifted_field = circshift(field, (96, 0))
-    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading)
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = false)
     hidedecorations!(ax)
     ax = GeoAxis(fig[2,2]; title = "SSP2-4.5 (MPI)", common_options...)
     field = plot_std ? ground_truth_std[:,:, scenario_index] : ground_truth[:, :, scenario_index]
     shifted_field = circshift(field, (96, 0))
-    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading)
+    surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = false)
     hidedecorations!(ax)
     cb_label = plot_std ? "Standard Deviation (K)" : "Temperature (K)"
     Colorbar(fig[4,1], colormap=cmap, colorrange=crange, width = Relative(3/4), height=Relative(1/30), vertical=false, label = cb_label, labelsize = legend_ls, ticklabelsize = legend_ls)
     # Colorbar(fig[4,2], colormap=cmap_std, colorrange=crange_std, width = Relative(3/4), height=Relative(1/30), vertical=false, label = "Standard Deviation (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
     # display(fig)
     if plot_std
-        save(figure_directory * "emulated_mpi_comparison_2100_std.png", fig)
+        save(figure_directory * "figure_D5_emulated_mpi_comparison_2100_std.png", fig)
     else
-        save(figure_directory * "emulated_mpi_comparison_2100_mean.png", fig)
+        save(figure_directory * "figure_D4_emulated_mpi_comparison_2100_mean.png", fig)
     end
 end

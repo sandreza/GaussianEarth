@@ -1,13 +1,6 @@
-using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars, CairoMakie
-
 import Base.Float32
 Float32(a::Missing) = Float32(0.0)
 ensemble_members = 30
-
-include("utils.jl")
-
-save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
-data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
 
 scenario_directories = readdir(data_directory)
 scenario_directories = ["historical", "ssp585"] #overwrite
@@ -100,51 +93,3 @@ for variable in ProgressBar(variables)
     hfile["linear fit monthly"] = linear_fit
     close(hfile)
 end
-
-
-# diagnostics
-##
-#=
-using CairoMakie
-fig = Figure()
-ax = Axis(fig[1, 1]; title = "pattern 1", xlabel = "Longitude", ylabel = "Latitude")
-heatmap!(ax, linear_fit_yearly[:,:,1], colormap = :RdBu)
-ax = Axis(fig[1, 2]; title = "pattern 2", xlabel = "Longitude", ylabel = "Latitude")
-heatmap!(ax, linear_fit_yearly[:,:,2], colormap = :RdBu)
-display(fig)
-save("pattern_scaling.png", fig)
-
-##
-ensemble_temporal_average = mean(all_together, dims = (4, 5))[:, :, :, 1, 1]
-
-error_list = copy(x)
-for i in eachindex(error_list)
-    error_list[i] = norm(ensemble_temporal_average[:,:,i] - (linear_fit_yearly[:,:,1] + x[i] * linear_fit_yearly[:,:,2]))
-end
-
-error_list_inf = copy(x)
-for i in eachindex(error_list)
-    error_list_inf[i] = norm((ensemble_temporal_average[:,:,i] - (linear_fit_yearly[:,:,1] + x[i] * linear_fit_yearly[:,:,2]))[:], Inf)
-end
-
-fig = Figure()
-ax = Axis(fig[1, 1]; title = "L2 Error", xlabel = "Temperature", ylabel = "Error")
-scatter!(ax, x * 273, error_list, colormap = :RdBu)
-ax = Axis(fig[1, 2]; title = "Inf Error", xlabel = "Temperature", ylabel = "Error")
-scatter!(ax, x * 273, error_list_inf, colormap = :RdBu)
-display(fig)
-save("pattern_scaling_error.png", fig)
-
-## 
-fig = Figure()
-i = 1
-j = 1
-model = linear_fit_yearly[i,j,1] .+ x * linear_fit_yearly[i,j ,2]
-ax = Axis(fig[1, 1]; title = "Model vs Ensemble", xlabel = "Time", ylabel = "Temperature")
-lines!(ax, x, model, label = "Model")
-lines!(ax, x, ensemble_temporal_average[i,j,:], label = "Ensemble")
-display(fig)
-save("pattern_scaling_model_at_11.png", fig)
-
-##
-=#

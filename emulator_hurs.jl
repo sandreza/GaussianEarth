@@ -6,9 +6,6 @@ include("utils.jl")
 ##
 ## save_directory = "PLEASE/SET/YOUR/SAVE/PATH/HERE/" ## if being used standalone
 ## data_directory = "PLEASE/SET/YOUR/DATA/PATH/HERE/"
-scenario_directories = readdir(data_directory)
-current_path = joinpath(data_directory, scenario_directories[1])
-variable_directories = readdir(current_path)
 
 ##
 field = "hurs"
@@ -65,7 +62,7 @@ else
 end
 
 ##
-emulator_hurs = GaussianEmulator(μmodel_quadratic, Lmodel, basis) #defaults to quadratic
+emulator_hurs = CovarEmulator(μmodel_quadratic, Lmodel, basis) #defaults to quadratic
 mean_field = mean(emulator_hurs)
 variance_field = variance(emulator_hurs)
 mean_modes = mode_mean(emulator_hurs)

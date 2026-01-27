@@ -7,6 +7,9 @@ resolution = (3000, 1000)
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 
 if process_data 
+    use_bundle = @isdefined(use_ground_truth_bundle) ? use_ground_truth_bundle : false
+    bundle_path = @isdefined(ground_truth_bundle_path) ? ground_truth_bundle_path : get_ground_truth_bundle_path()
+
     month = 1
     field = "tas"
 
@@ -17,7 +20,9 @@ if process_data
     close(hfile)
     eof_mode, temperature = concatenate_regression(field, ["historical"])
     eofs = eof_mode[:,:, 1:45] # [1:48..., 50:50...]]
-    historical_field = common_array("historical", field)
+    if !(use_bundle && has_ground_truth_bundle(bundle_path))
+        historical_field = common_array("historical", field)
+    end
     hfile = h5open(save_directory * field * "_basis.hdf5", "r")
     latitude = read(hfile["latitude"])
     longitude = read(hfile["longitude"])
@@ -44,6 +49,7 @@ variance_field = variance(emulator; modes)
 mean_modes = mode_mean(emulator; modes)
 variance_modes = mode_variance(emulator; modes)
 
+
 κs = Float64[]
 ρs = Float64[]
 for mode_number in 1:modes
@@ -64,28 +70,63 @@ kurtosis_min = argmin(κs)
 skewness_min = argmin(ρs)
 gaussian_max = argmin(abs.(κs) + abs.(ρs))
 
-κs = Float64[]
-ρs = Float64[]
-for j in ProgressBar(1:96)
-    for i in 1:192
-        month_field = historical_field[i, j, year_inds, month, :][:]
-        μ = mean(month_field)
-        σ = std(month_field)
-        κ = kurtosis(month_field)
-        ρ = skewness(month_field)
-        push!(κs, κ)
-        push!(ρs, ρ)
+if use_bundle && has_ground_truth_bundle(bundle_path)
+    selected_indices = read_ground_truth("stats/figure_A1/selected_indices"; bundle_path)
+else
+    κs = Float64[]
+    ρs = Float64[]
+    for j in ProgressBar(1:96)
+        for i in 1:192
+            month_field = historical_field[i, j, year_inds, month, :][:]
+            μ = mean(month_field)
+            σ = std(month_field)
+            κ = kurtosis(month_field)
+            ρ = skewness(month_field)
+            push!(κs, κ)
+            push!(ρs, ρ)
+        end
     end
+
+    kurtosis_max = argmax(κs)
+    skewness_max = argmax(ρs)
+    kurtosis_min = argmin(κs)
+    skewness_min = argmin(ρs)
+    gaussian_max = argmin(abs.(κs) + abs.(ρs))
+    selected_indices = [gaussian_max, kurtosis_min, skewness_min, kurtosis_max, skewness_max]
 end
 
-kurtosis_max = argmax(κs)
-skewness_max = argmax(ρs)
-kurtosis_min = argmin(κs)
-skewness_min = argmin(ρs)
-gaussian_max = argmin(abs.(κs) + abs.(ρs))
+fig = Figure(; resolution)
+inds = 1:45
+lower_order_statistics = Vector{Float64}[]
+for (j, mode_number) in enumerate(sort([gaussian_max, skewness_min, skewness_max, kurtosis_min, kurtosis_max]))
+    ax = Axis(fig[1, j]; title = "Mode $mode_number", xlabel = "Amplitude", ylabel = "Probability Density", common_options...)
+
+    month_eof = eofs[mode_number, month:12:end, :]
+    month_eof = month_eof[year_inds, :][:]
+    μ = mean(month_eof)
+    σ = std(month_eof)
+    κ = kurtosis(month_eof)
+    ρ = skewness(month_eof)
+    push!(lower_order_statistics, [μ, σ, κ, ρ])
+    x = range(μ - 4σ, μ + 4σ, length = 100)
+    y = gaussian.(x, μ, σ)
+    hist!(ax, month_eof, bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
+    # lines!(ax, x, y, color = :red)
+
+    μ = mean_modes[mode_number]
+    σ = sqrt(variance_modes[mode_number])
+    y = gaussian.(x, μ, σ)
+    lines!(ax, x, y, color = :blue, label = "Emulator")
+    xlims!(ax, μ - 4σ, μ + 4σ)
+    if j == 1 
+        axislegend(ax, position = :lt, labelsize = legend_ls)
+    end
+end
+# display(fig)
+# save(figure_directory * field * "_eof_gaussian_with_model.png", fig)
 
 
-for (j, mode_number) in enumerate(sort([gaussian_max, kurtosis_min, skewness_min, kurtosis_max, skewness_max]))
+for (j, mode_number) in enumerate(sort(selected_indices))
     ii = (mode_number-1)%192 + 1
     jj = (mode_number-1)÷192 + 1
 
@@ -93,7 +134,12 @@ for (j, mode_number) in enumerate(sort([gaussian_max, kurtosis_min, skewness_min
     lon = longitude[ii]
     titlestring = @sprintf("%.2fᵒ, %.2fᵒ", lon, lat)
     ax = Axis(fig[2, j]; title = titlestring, xlabel = "Temperature (K)", ylabel = "Probability Density", common_options...)
-    month_field = historical_field[ii, jj, year_inds, month, :][:]
+    if use_bundle && has_ground_truth_bundle(bundle_path)
+        original_index = findfirst(==(mode_number), selected_indices)
+        month_field = read_ground_truth("samples/figure_A1/point_$original_index"; bundle_path)
+    else
+        month_field = historical_field[ii, jj, year_inds, month, :][:]
+    end
     μ = mean(month_field)
     σ = std(month_field)
     κ = kurtosis(month_field)

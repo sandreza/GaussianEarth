@@ -12,6 +12,9 @@ tls = 40
 legend_ls = 35
 common_options_2 = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 if process_data
+    use_bundle = @isdefined(use_ground_truth_bundle) ? use_ground_truth_bundle : false
+    bundle_path = @isdefined(ground_truth_bundle_path) ? ground_truth_bundle_path : get_ground_truth_bundle_path()
+
     month = 1
     field = "tas"
 
@@ -21,27 +24,33 @@ if process_data
     metric = read(hfile["metric"])
     close(hfile)
 
-    eof_mode, temperature = concatenate_regression(field, ["historical"])
-    eofs = eof_mode[:,:, 1:45] # [1:48..., 50:50...]]
+    if use_bundle && has_ground_truth_bundle(bundle_path)
+        latitude_mean = read_ground_truth("stats/figure_6/latitude_mean"; bundle_path)
+        latitude_std = read_ground_truth("stats/figure_6/latitude_std"; bundle_path)
+        lat_samples = Dict(i => read_ground_truth("samples/figure_6/lat_$i"; bundle_path) for i in [1, 24, 48, 72, 96])
+    else
+        eof_mode, temperature = concatenate_regression(field, ["historical"])
+        eofs = eof_mode[:,:, 1:45] # [1:48..., 50:50...]]
 
-    historical_field = common_array("historical", field)
-    hfile = h5open(save_directory * field * "_basis.hdf5", "r")
-    latitude = read(hfile["latitude"])
-    longitude = read(hfile["longitude"])
-    metric = read(hfile["metric"])
-    close(hfile)
+        historical_field = common_array("historical", field)
+        hfile = h5open(save_directory * field * "_basis.hdf5", "r")
+        latitude = read(hfile["latitude"])
+        longitude = read(hfile["longitude"])
+        metric = read(hfile["metric"])
+        close(hfile)
 
-    year_inds = 1:(argmin(temperature)-1) # volcano year
-    acceptible_inds_lower = (temperature .> minimum(temperature[year_inds]))
-    acceptible_inds_upper = (temperature .< maximum(temperature[year_inds]))
-    acceptible_inds = acceptible_inds_lower .& acceptible_inds_upper
-    year_inds = collect(eachindex(temperature))[acceptible_inds]
+        year_inds = 1:(argmin(temperature)-1) # volcano year
+        acceptible_inds_lower = (temperature .> minimum(temperature[year_inds]))
+        acceptible_inds_upper = (temperature .< maximum(temperature[year_inds]))
+        acceptible_inds = acceptible_inds_lower .& acceptible_inds_upper
+        year_inds = collect(eachindex(temperature))[acceptible_inds]
 
-    include("emulator.jl")
+        global_mean_field = mean(historical_field[:, :, year_inds, month, :], dims = 1)[1, :, :, :]
+        latitude_mean = mean(global_mean_field, dims = (2, 3))[:]
+        latitude_std = std(global_mean_field, dims = (2, 3))[:]
+    end
 
-    global_mean_field = mean(historical_field[:, :, year_inds, month, :], dims = 1)[1, :, :, :]
-    latitude_mean = mean(global_mean_field, dims = (2, 3))[:]
-    latitude_std = std(global_mean_field, dims = (2, 3))[:]
+    include("../emulator.jl")
 
     rmetric = reshape(metric, (192, 96, 1, 1, 1))
     fmetric = reshape(metric, (192 * 96, 1))
@@ -76,7 +85,8 @@ for (i, lat_index) in enumerate([1, 24, 48, 72, 96])
     μ = μs[lat_index]
     x = range(μ - 4σ, μ + 4σ, length = 100)
     y = gaussian.(x, μ, σ)
-    hist!(ax, global_mean_field[lat_index, :, :][:], bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
+    data_samples = (use_bundle && has_ground_truth_bundle(bundle_path)) ? lat_samples[lat_index] : global_mean_field[lat_index, :, :][:]
+    hist!(ax, data_samples, bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
     lines!(ax, x, y, color = :blue, label = "Emulator")
     if i == 1
         axislegend(ax, position = :lt, labelsize = legend_ls)

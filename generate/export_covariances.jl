@@ -1,11 +1,3 @@
-using CairoMakie
-using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
-using LinearAlgebra
-
-include("utils.jl")
-##
-save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
-data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
 scenario_directories = readdir(data_directory)
 current_path = joinpath(data_directory, scenario_directories[1])
 variable_directories = readdir(current_path)

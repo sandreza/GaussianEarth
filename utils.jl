@@ -5,12 +5,31 @@ import Statistics.mean, Statistics.std, Random.rand
 
 const DEFAULT_SAVE_DIRECTORY = "PLEASE/SET/YOUR/SAVE/PATH/HERE/"
 const DEFAULT_DATA_DIRECTORY = "PLEASE/SET/YOUR/DATA/PATH/HERE/"
+const DEFAULT_GROUND_TRUTH_BUNDLE = "ground_truth_bundle.hdf5"
+
+# Compatibility helpers for HDF5.jl (precompute_ground_truth_bundle.jl expects these names)
+g_create(parent, name; kwargs...) = create_group(parent, name; kwargs...)
+d_create(parent, name, dtype, dspace; kwargs...) = create_dataset(parent, name, dtype, dspace; kwargs...)
 
 function get_save_directory()
     return @isdefined(save_directory) ? save_directory : DEFAULT_SAVE_DIRECTORY
 end
 function get_data_directory()
     return @isdefined(data_directory) ? data_directory : DEFAULT_DATA_DIRECTORY
+end
+
+function get_ground_truth_bundle_path()
+    return joinpath(get_save_directory(), DEFAULT_GROUND_TRUTH_BUNDLE)
+end
+
+function has_ground_truth_bundle(bundle_path = get_ground_truth_bundle_path())
+    return ispath(bundle_path)
+end
+
+function read_ground_truth(dataset; bundle_path = get_ground_truth_bundle_path())
+    h5open(bundle_path, "r") do h5
+        return read(h5[dataset])
+    end
 end
 
 # grabbing data
@@ -96,7 +115,31 @@ function common_array(scenario, variable; data_directory = get_data_directory(),
     return all_together
 end
 
-function ensemble_averaging(scenario, variable; data_directory = get_data_directory(), ensemble_members = 45, return_std=false) #added option for std
+function ensemble_averaging(
+    scenario,
+    variable;
+    data_directory = get_data_directory(),
+    ensemble_members = 45,
+    return_std = false,
+    use_bundle = true,
+    bundle_path = get_ground_truth_bundle_path()
+) 
+    if use_bundle && ispath(bundle_path) && variable == "tas"
+        try
+            if return_std
+                std_monthly = read_ground_truth("tas/std_monthly/$scenario"; bundle_path)
+                std_mean = mean(std_monthly, dims = 4)[:,:,:,1]
+                return std_monthly, std_mean
+            else
+                mean_monthly = read_ground_truth("tas/mean_monthly/$scenario"; bundle_path)
+                annual_mean = read_ground_truth("tas/annual_mean/$scenario"; bundle_path)
+                return mean_monthly, annual_mean
+            end
+        catch err
+            @warn "Ground-truth bundle missing data; falling back to raw data" err
+        end
+    end
+
     current_path = joinpath(data_directory, scenario)
     local_current_path = joinpath(current_path, variable)
     file_names = readdir(local_current_path)
@@ -151,7 +194,7 @@ function gaussian_grid(μ, σ; factor = 4, n = 100)
 end
 
 ##
-struct GaussianEmulator{M, L, B, A1, A2}
+struct CovarEmulator{M, L, B, A1, A2}
     mean::M
     decomposition::L
     basis::B
@@ -159,20 +202,20 @@ struct GaussianEmulator{M, L, B, A1, A2}
     global_mean_temperature::A2
 end
 
-function GaussianEmulator(data_directory; modes = 1000)
+function CovarEmulator(data_directory; modes = 1000)
     hfile = h5open(data_directory * "_model.hdf5", "r")
     mean = read(hfile["mean"])[1:modes, :, :]
     decomposition = read(hfile["L model"])[1:modes, 1:modes, :, :]
     basis = read(hfile["basis"])[:, 1:modes]
     close(hfile)
-    return GaussianEmulator(mean, decomposition, basis, [1], [1.0555532f0]) 
+    return CovarEmulator(mean, decomposition, basis, [1], [1.0555532f0]) 
 end
 
-function GaussianEmulator(μmodel, Lmodel, basis)
-    return GaussianEmulator(μmodel, Lmodel, basis, [1], [1.0555532f0])
+function CovarEmulator(μmodel, Lmodel, basis)
+    return CovarEmulator(μmodel, Lmodel, basis, [1], [1.0555532f0])
 end
 
-function mean(emulator::GaussianEmulator; modes = 1000)
+function mean(emulator::CovarEmulator; modes = 1000)
     M, N = size(emulator.basis)
     k = size(emulator.mean)[2] - 1
     month = emulator.month[1]
@@ -188,7 +231,7 @@ function mean(emulator::GaussianEmulator; modes = 1000)
     return ensemble_mean
 end
 
-function rand(emulator::GaussianEmulator; modes = 1000)
+function rand(emulator::CovarEmulator; modes = 1000)
     M, N = size(emulator.basis)
     month = emulator.month[1]
     k = size(emulator.mean)[2] - 1
@@ -227,7 +270,7 @@ function mode_variance(emulator; modes = 1000)
     return [Σ[i,i] for i in 1:modes]
 end
 
-function variance(emulator::GaussianEmulator; modes = 1000)
+function variance(emulator::CovarEmulator; modes = 1000)
     M, N = size(emulator.basis)
     N = minimum([N, modes])
     global_mean_temperature = emulator.global_mean_temperature[1]
@@ -242,7 +285,7 @@ function variance(emulator::GaussianEmulator; modes = 1000)
     return variance_field
 end
 
-function emulator_variance(emulator::GaussianEmulator; modes = 1000, month = nothing, global_mean_temperature = nothing)
+function emulator_variance(emulator::CovarEmulator; modes = 1000, month = nothing, global_mean_temperature = nothing)
     if isnothing(global_mean_temperature)
         global_mean_temperature = emulator.global_mean_temperature[1]
     end
@@ -254,7 +297,7 @@ function emulator_variance(emulator::GaussianEmulator; modes = 1000, month = not
     return Σ
 end
 
-function emulator_mean_variance_linear_functionals(observables, emulator::GaussianEmulator; modes = 1000, show_progress = true)
+function emulator_mean_variance_linear_functionals(observables, emulator::CovarEmulator; modes = 1000, show_progress = true)
     μs = zeros(Float32, length(observables))
     σs = zeros(Float32, length(observables))
     mean_modes = mode_mean(emulator; modes)

@@ -9,6 +9,9 @@ resolution = (1800, 1200) .* 2
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls, xlabelpadding = xlp, ylabelpadding = ylp)
 
 if process_data 
+    use_bundle = @isdefined(use_ground_truth_bundle) ? use_ground_truth_bundle : false
+    bundle_path = @isdefined(ground_truth_bundle_path) ? ground_truth_bundle_path : get_ground_truth_bundle_path()
+
     field_name = "tas"
     hfile = h5open(save_directory * field_name * "_basis.hdf5", "r")
     latitude = read(hfile["latitude"])
@@ -21,7 +24,12 @@ if process_data
     temperatures = []
     scenarios = ["historical", "ssp585", "ssp119", "ssp245"]
     for scenario in scenarios
-        historical_tas = common_array(scenario, "tas"; ensemble_members = 45)
+        if use_bundle && has_ground_truth_bundle(bundle_path)
+            mean_monthly = read_ground_truth("tas/mean_monthly/$scenario"; bundle_path)
+            historical_tas = reshape(mean_monthly, size(mean_monthly)..., 1)
+        else
+            historical_tas = common_array(scenario, "tas"; ensemble_members = 45)
+        end
         push!(tas_fields, historical_tas)
         historical_temperatures = regression_variable(scenario)
         push!(temperatures, historical_temperatures)
@@ -56,25 +64,25 @@ cmap = Reverse(:linear_tritanopic_krjcw_5_98_c46_n256)
 ax = GeoAxis(fig[1,1]; title = "Historical", common_options...)
 field = emulated_truth_truth_error[:, :, scenario_index] 
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = false)
 hidedecorations!(ax)
 scenario_index = 2 
 ax = GeoAxis(fig[1,2]; title = "SSP5-8.5", common_options...)
 field = emulated_truth_truth_error[:, :, scenario_index] 
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = false)
 hidedecorations!(ax)
 scenario_index = 3
 ax = GeoAxis(fig[2,1]; title = "SSP1-1.9", common_options...)
 field = emulated_truth_truth_error[:, :, scenario_index] 
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = false)
 hidedecorations!(ax)
 scenario_index = 4
 ax = GeoAxis(fig[2,2]; title = "SSP2-4.5", common_options...)
 field = emulated_truth_truth_error[:, :, scenario_index] 
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = (0, 1), shading = false)
 Colorbar(fig[1:2,3], colormap=cmap, colorrange=(0, 1), height = Relative(2/4), label = "Temperature Error (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
 hidedecorations!(ax)
 save(figure_directory * "figure_4_emulated_truth_truth_error_unweighted_scenarios_tas.png", fig) # this is the one currently being used in the paper

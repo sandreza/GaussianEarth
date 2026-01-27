@@ -185,7 +185,7 @@ for i in eachindex(observables)
 end
 
 # display(fig)
-save(figure_directory * "case_study_divergence_first.png", fig)
+save(figure_directory * "figure_9_case_study_first.png", fig)
 @info "Generated Figure 9."
 
 #####  Figure 10
@@ -233,5 +233,5 @@ for i in eachindex(observables)
 end
 
 # display(fig)
-save(figure_directory * "case_study_divergence_update.png", fig)
+save(figure_directory * "figure_10_case_study_div.png", fig)
 @info "Generated updated Figure 10."

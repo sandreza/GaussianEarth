@@ -12,7 +12,7 @@ hfile = h5open(save_directory * field * "_model.hdf5", "r")
 Lmodel = read(hfile["L model"])
 basis = read(hfile["basis"])
 close(hfile)
-emulator = GaussianEmulator(μmodel, Lmodel, basis) #this is the lnear one
+emulator = CovarEmulator(μmodel, Lmodel, basis) #this is the lnear one
 
 # now we have emulator and quadratic emulator, can do the error comparison
 
@@ -109,7 +109,7 @@ end
 if process_data
     scale_factor = 273
     month = 1 # this is where we set which month we're looking at (January)
-    eof_mode, temperature = concatenate_regression(field, ["historical", "ssp585"]; directory = "/net/fs06/d3/mgeo/GaussianEarthData")
+    eof_mode, temperature = concatenate_regression(field, ["historical", "ssp585"]; directory = save_directory)
     eofs = eof_mode[:,month:12:end, 1:45] 
 
     hfile = h5open(save_directory * field * "_mean_regression.hdf5", "r")
@@ -204,16 +204,9 @@ for (i, field) in enumerate(fields)
     xlims!(ax, xrange...)
     ylims!(ax, yrange...)
 end
-# display(fig_tas)
 
-# save(figure_directory * field_name * "_errors_diff.png", fig_tas)
+### find most quadratic bits
 
-
-############# find most quadratic bits
-
-# resolution = (3000, 1000)
-
-# fig = Figure(; resolution)
 for (jj, eof_index) in enumerate(max_indices)
     if jj == 1
         ax = Axis(fig_tas[2,jj]; title = "Mode $eof_index", xlabel = "Temperature (K)", ylabel = "Amplitude", common_options...)
@@ -241,5 +234,6 @@ for (jj, eof_index) in enumerate(max_indices)
         axislegend(ax, position = :rt, labelsize = legend_ls)
     end
 end
-save(figure_directory * "quadratic_errors.png", fig_tas)
-display(fig_tas)
+save(figure_directory * "figure_B1_quadratic_errors.png", fig_tas)
+# display(fig_tas)
+@info "Generated Figure B1."

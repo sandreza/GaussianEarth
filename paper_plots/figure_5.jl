@@ -52,25 +52,25 @@ ax = GeoAxis(fig[1,1]; title = "Historical", common_options...)
 field = year_mean_stds[:, :,  scenario_index]
 shifted_field = circshift(field, (96, 0))
 crange = extrema(year_mean_stds)
-surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = false)
 hidedecorations!(ax)
 scenario_index = 2 
 ax = GeoAxis(fig[1,2]; title = "SSP5-8.5", common_options...)
 field = year_mean_stds[:, :,  scenario_index]
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = false)
 hidedecorations!(ax)
 scenario_index = 3
 ax = GeoAxis(fig[2,1]; title = "SSP1-1.9", common_options...)
 field = year_mean_stds[:, :,  scenario_index]
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = false)
 hidedecorations!(ax)
 scenario_index = 4
 ax = GeoAxis(fig[2,2]; title = "SSP2-4.5", common_options...)
 field = year_mean_stds[:, :,  scenario_index]
 shifted_field = circshift(field, (96, 0))
-surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading)
+surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = false)
 Colorbar(fig[1:2,3], colormap=cmap, colorrange=crange, height = Relative(2/4), label = "temperature standard deviation (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
 hidedecorations!(ax)
 save(figure_directory * "figure_5_tas_averaged_std.png", fig)
