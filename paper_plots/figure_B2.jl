@@ -14,7 +14,7 @@ field_name = "tas"
 if process_data 
     #read in linear emulator
     #load in saved out tas emulator
-    hfile = h5open(save_directory * field_name * "_gaussian_model.hdf5", "r")
+    hfile = h5open(save_directory * field_name * "_model.hdf5", "r")
     μmodel = read(hfile["mean"])
     Lmodel = read(hfile["L model"])
     basis = read(hfile["basis"])

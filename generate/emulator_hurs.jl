@@ -32,7 +32,7 @@ hfile = h5open(save_directory * field * "_basis.hdf5", "r")
 basis = read(hfile["basis"] )
 close(hfile)
 
-hfile = h5open(save_directory * field * "_gaussian_model.hdf5", "w")
+hfile = h5open(save_directory * field * "_model.hdf5", "w")
 Lmodel = zeros(Float32, size(Ls[1])..., 12)
 [Lmodel[:, :, :, i] .= Ls[i] for i in 1:12]
 μmodel = zeros(Float32, size(rC[1])..., 12)

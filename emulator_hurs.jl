@@ -12,7 +12,7 @@ variable_directories = readdir(current_path)
 
 ##
 field = "hurs"
-if !ispath(save_directory * field * "_gaussian_model.hdf5")
+if !ispath(save_directory * field * "_model.hdf5")
     covsave = h5open(save_directory * field * "_covariances_model.hdf5", "r")
     Ls = []
     for month in 1:12
@@ -33,7 +33,7 @@ if !ispath(save_directory * field * "_gaussian_model.hdf5")
     basis = read(hfile["basis"] )
     close(hfile)
 
-    hfile = h5open(save_directory * field * "_gaussian_model.hdf5", "w")
+    hfile = h5open(save_directory * field * "_model.hdf5", "w")
     Lmodel = zeros(Float32, size(Ls[1])..., 12)
     [Lmodel[:, :, :, i] .= Ls[i] for i in 1:12]
     μmodel = zeros(Float32, size(rC[1])..., 12)
@@ -56,7 +56,7 @@ if !ispath(save_directory * field * "_gaussian_model.hdf5")
     hfile["mean_quadratic"] = μmodel_quadratic
     close(hfile)
 else
-    hfile = h5open(save_directory * field * "_gaussian_model.hdf5", "r")
+    hfile = h5open(save_directory * field * "_model.hdf5", "r")
     μmodel = read(hfile["mean"])
     μmodel_quadratic = read(hfile["mean_quadratic"])
     Lmodel = read(hfile["L model"])

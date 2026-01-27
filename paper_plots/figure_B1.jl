@@ -6,7 +6,7 @@ field = "tas"
 
 ####
 #load in saved out emulators
-hfile = h5open(save_directory * field * "_gaussian_model.hdf5", "r")
+hfile = h5open(save_directory * field * "_model.hdf5", "r")
 μmodel = read(hfile["mean"])
 μmodel_quadratic = read(hfile["mean_quadratic"])
 Lmodel = read(hfile["L model"])

@@ -160,7 +160,7 @@ struct GaussianEmulator{M, L, B, A1, A2}
 end
 
 function GaussianEmulator(data_directory; modes = 1000)
-    hfile = h5open(data_directory * "_gaussian_model.hdf5", "r")
+    hfile = h5open(data_directory * "_model.hdf5", "r")
     mean = read(hfile["mean"])[1:modes, :, :]
     decomposition = read(hfile["L model"])[1:modes, 1:modes, :, :]
     basis = read(hfile["basis"])[:, 1:modes]

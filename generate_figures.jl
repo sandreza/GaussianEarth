@@ -15,7 +15,7 @@ include("utils.jl")
 
 # #load in saved out tas emulator -- not necessary, since this is done in each figure anyway
 # field = "tas"
-# hfile = h5open(save_directory * field * "_gaussian_model.hdf5", "r")
+# hfile = h5open(save_directory * field * "_model.hdf5", "r")
 # μmodel = read(hfile["mean"])
 # μmodel_quadratic = read(hfile["mean_quadratic"])
 # Lmodel = read(hfile["L model"])
