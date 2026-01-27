@@ -11,7 +11,6 @@ linewidth = 5
 field_name = "tas" 
 colors = [:red4, :red, :indigo, :magenta3]
 
-# get basis and metric correction terms
 if process_data
     hfile = h5open(save_directory * field_name * "_basis.hdf5", "r")
     latitude = read(hfile["latitude"])
@@ -21,56 +20,65 @@ if process_data
     sqrt_f_metric = sqrt.(reshape(metric, 192 * 96))
 
     Φ = eof_basis(field_name) 
+
+    include("../emulator.jl")
 end
 
-## get true data for comparison
-if process_data
-    scenarios = ["historical", "ssp585", "ssp119", "ssp245"]
-    temperatures = [] 
-    fields = [] #list of four arrays of time x space data values for given variable #NEEDS to be standard deviation !!
-    for scenario in scenarios
-        temperature = regression_variable(scenario) #this gets the list of temps to regress onto
-        a, b = ensemble_averaging(scenario, field_name; ensemble_members = 29, return_std=true) #gets the ensemble avg for that var? #changed this 
-        push!(temperatures, temperature)
-        push!(fields, a[:,:,:,:]) # stds for all months
+if !isfile(figure_directory * field_name * "_full_errors.hdf5")
+    get_errors = true
+else
+    get_errors = false
+end
+
+if get_errors
+    ## get true data for comparison
+    if process_data
+        scenarios = ["historical", "ssp585", "ssp119", "ssp245"]
+        temperatures = [] 
+        fields = [] #list of four arrays of time x space data values for given variable #NEEDS to be standard deviation !!
+        for scenario in scenarios
+            temperature = regression_variable(scenario) #this gets the list of temps to regress onto
+            a, b = ensemble_averaging(scenario, field_name; ensemble_members = 29, return_std=true) #gets the ensemble avg for that var? #changed this 
+            push!(temperatures, temperature)
+            push!(fields, a[:,:,:,:]) # stds for all months
+        end
     end
-end
 
-## get the errors
+    ## get the errors
 
-error_historical = zeros(Float32, 1, 3, 165, 12)
-error_future = zeros(Float32, 3, 3, 86, 12)
+    error_historical = zeros(Float32, 1, 3, 165, 12)
+    error_future = zeros(Float32, 3, 3, 86, 12)
 
-for (e, d) in enumerate([10, 100, 1000])
-    println("working on $d")
-    basis = Φ[:, 1:d]
-    for (i, field) in enumerate(fields)
-        Ts = temperatures[i]
-        for (j, t) in ProgressBar(enumerate(Ts))
-            for month in 1:12
-                Σ = emulator_variance(emulator; modes=d, month=month, global_mean_temperature=t)
-                σ = sqrt.(diag((basis * Σ) * basis'))
-                error = norm((reshape(field[:, :, j, month], size(Φ)[1]) .- σ)[:] .* sqrt_f_metric)
-                if i == 1
-                    error_historical[1, e, j, month] = error
-                else
-                    error_future[i-1, e, j, month] = error
+    for (e, d) in enumerate([10, 100, 1000])
+        println("working on $d")
+        basis = Φ[:, 1:d]
+        for (i, field) in enumerate(fields)
+            Ts = temperatures[i]
+            for (j, t) in ProgressBar(enumerate(Ts))
+                for month in 1:12
+                    Σ = emulator_variance(emulator; modes=d, month=month, global_mean_temperature=t)
+                    σ = sqrt.(diag((basis * Σ) * basis'))
+                    error = norm((reshape(field[:, :, j, month], size(Φ)[1]) .- σ)[:] .* sqrt_f_metric)
+                    if i == 1
+                        error_historical[1, e, j, month] = error
+                    else
+                        error_future[i-1, e, j, month] = error
+                    end
                 end
             end
         end
     end
+
+    hfile = h5open(save_directory * field_name * "_full_errors.hdf5", "w") 
+    write(hfile, "error_historical", error_historical)
+    write(hfile, "error_future", error_future)
+    close(hfile)
+else
+    hfile = h5open(save_directory * field_name * "_full_errors.hdf5", "r")
+    error_historical = read(hfile["error_historical"])
+    error_future = read(hfile["error_future"])
+    close(hfile)
 end
-
-hfile = h5open(save_directory * field_name * "_full_errors.hdf5", "w") 
-write(hfile, "error_historical", error_historical)
-write(hfile, "error_future", error_future)
-close(hfile)
-
-### load in pre-calculated error (that's saved out above) #EDIT TO REGENERATE IF NONEXISTENT
-# hfile = h5open(save_directory * field_name * "_errors.hdf5", "r")
-# error_historical = read(hfile["error_historical"])
-# error_future = read(hfile["error_future"])
-# close(hfile)
 
 ## average the errors
 avg_error_historical = mean(error_historical, dims = 4)[:, :, :, 1]

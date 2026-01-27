@@ -31,9 +31,9 @@ max_temp_2 = ssp5[end]/273 #2070
 field = "tas" 
 field_name = "tas"
 
-#load in linear emulator
-include("emulator.jl")
-include("emulator_hurs.jl")
+#load in emulator
+include("../emulator.jl")
+include("../emulator_hurs.jl")
 d = 1000
 
 hfile = h5open(save_directory * field * "_basis.hdf5", "r")
@@ -115,7 +115,7 @@ if plot_divergence
 end
 
 
-### original figure code
+### Figure 9
 fig = Figure(; resolution=(300, 150) .* 12)
 observable_names_base = ["NE India", "Midwest US"]
 month_string = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -184,12 +184,11 @@ for i in eachindex(observables)
 
 end
 
-display(fig)
+# display(fig)
 save(figure_directory * "case_study_divergence_first.png", fig)
+@info "Generated Figure 9."
 
-
-
-##### new figure code
+#####  Figure 10
 fig = Figure(; resolution=(400, 150) .* 12)
 observable_names_base = ["NE India", "Midwest US"]
 month_string = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -233,6 +232,6 @@ for i in eachindex(observables)
     hidespines!(ax10)
 end
 
-
-display(fig)
+# display(fig)
 save(figure_directory * "case_study_divergence_update.png", fig)
+@info "Generated updated Figure 10."

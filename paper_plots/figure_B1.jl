@@ -5,14 +5,14 @@ colors = [:red4, :red, :indigo, :magenta3]
 field = "tas"
 
 ####
-#load in saved out emulators -- might be unnecessary 
+#load in saved out emulators
 hfile = h5open(save_directory * field * "_gaussian_model.hdf5", "r")
 μmodel = read(hfile["mean"])
 μmodel_quadratic = read(hfile["mean_quadratic"])
 Lmodel = read(hfile["L model"])
 basis = read(hfile["basis"])
 close(hfile)
-emulator = GaussianEmulator(μmodel, Lmodel, basis)
+emulator = GaussianEmulator(μmodel, Lmodel, basis) #this is the lnear one
 
 # now we have emulator and quadratic emulator, can do the error comparison
 

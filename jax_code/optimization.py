@@ -13,7 +13,7 @@ def model(L, gi):
 
 def loss(L, gmts, truths):
     y = jnp.float32(0.0)  # Initialize y as a scalar with float32 type
-    for i in range(S.shape[-1]):
+    for i in range(gmts.shape[0]):
         gi = gmts[i]
         truth = truths[:,:, i]
         prediction = model(L, gi)
@@ -28,7 +28,7 @@ def update(params, x, y, opt_state):
     return new_params, new_opt_state
 
 # Load data 
-directory = '/nobackup1/sandre/GaussianEarth/'
+directory = 'PLEASE/SET/YOUR/SAVE/PATH/HERE/'
 name = 'tas_covariances'
 file_save = h5py.File(directory + name + '_model.hdf5', 'w')
 for j in range(1, 13):

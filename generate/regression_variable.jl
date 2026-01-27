@@ -1,13 +1,8 @@
-using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
-
-save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
-data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
-
 scenario_directories = readdir(data_directory)
-field_name = "tas"
+field_name = "tas" # this is only for the regression variable
 
 gmt = []
-regression_file = h5open(save_directory * field_name * "_ensemble_yearly_average.hdf5", "w") #I'm not sure this is ever used...
+regression_file = h5open(save_directory * field_name * "_ensemble_yearly_average.hdf5", "w")
 for scenario in ProgressBar(scenario_directories)
     hfile = h5open(save_directory * field_name * "_" * scenario * "_projection.hdf5", "r")
     global_mean = read(hfile["global mean"])

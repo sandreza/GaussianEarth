@@ -29,6 +29,9 @@ if process_data
     acceptible_inds = acceptible_inds_lower .& acceptible_inds_upper
     year_inds = collect(eachindex(temperature))[acceptible_inds]
     modes = 1000 
+
+    include("../emulator.jl")
+
     mean_field = mean(emulator; modes)
     variance_field = variance(emulator; modes)
     mean_modes = mode_mean(emulator; modes)
@@ -60,38 +63,6 @@ skewness_max = argmax(ρs)
 kurtosis_min = argmin(κs)
 skewness_min = argmin(ρs)
 gaussian_max = argmin(abs.(κs) + abs.(ρs))
-
-
-### additional plot not used in paper
-# fig = Figure(; resolution)
-# inds = 1:45
-# lower_order_statistics = Vector{Float64}[]
-# for (j, mode_number) in enumerate(sort([gaussian_max, skewness_min, skewness_max, kurtosis_min, kurtosis_max]))
-#     ax = Axis(fig[1, j]; title = "Mode $mode_number", xlabel = "Amplitude", ylabel = "Probability Density", common_options...)
-
-#     month_eof = eofs[mode_number, month:12:end, :]
-#     month_eof = month_eof[year_inds, :][:]
-#     μ = mean(month_eof)
-#     σ = std(month_eof)
-#     κ = kurtosis(month_eof)
-#     ρ = skewness(month_eof)
-#     push!(lower_order_statistics, [μ, σ, κ, ρ])
-#     x = range(μ - 4σ, μ + 4σ, length = 100)
-#     y = gaussian.(x, μ, σ)
-#     hist!(ax, month_eof, bins = 25, color = (:purple, 0.5), normalization = :pdf, label = "Data")
-#     # lines!(ax, x, y, color = :red)
-
-#     μ = mean_modes[mode_number]
-#     σ = sqrt(variance_modes[mode_number])
-#     y = gaussian.(x, μ, σ)
-#     lines!(ax, x, y, color = :blue, label = "Emulator")
-#     xlims!(ax, μ - 4σ, μ + 4σ)
-#     if j == 1 
-#         axislegend(ax, position = :lt, labelsize = legend_ls)
-#     end
-# end
-# display(fig)
-# save(figure_directory * field * "_eof_gaussian_with_model.png", fig)
 
 κs = Float64[]
 ρs = Float64[]

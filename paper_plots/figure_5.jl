@@ -75,3 +75,4 @@ Colorbar(fig[1:2,3], colormap=cmap, colorrange=crange, height = Relative(2/4), l
 hidedecorations!(ax)
 save(figure_directory * "figure_5_tas_averaged_std.png", fig)
 # display(fig)
+@info "Generated Figure 5."

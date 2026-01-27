@@ -9,8 +9,8 @@ global_common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, x
 
 if process_data
     scenario = "ssp245"
-    include("emulator.jl")
-    include("emulator_hurs.jl")
+    include("../emulator.jl")
+    include("../emulator_hurs.jl")
     _, temperatures = concatenate_regression("tas", ["historical", scenario])
 end
 ##
@@ -184,3 +184,4 @@ end
 # display(fig)
 
 save(figure_directory * "climate_change_shifts_hurs_tas_with_data_jan_july_points_"*scenario*".png", fig)
+@info "Generated Figure 8."

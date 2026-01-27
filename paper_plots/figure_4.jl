@@ -27,6 +27,8 @@ if process_data
         push!(temperatures, historical_temperatures)
     end
 
+    include("../emulator.jl")
+
     emulated_truth = zeros(Float32, 192, 96)
     truth = zeros(Float32, 192, 96)
     emulated_truth_truth_error = zeros(Float32, 192, 96, length(scenarios))
@@ -76,5 +78,4 @@ surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = 
 Colorbar(fig[1:2,3], colormap=cmap, colorrange=(0, 1), height = Relative(2/4), label = "Temperature Error (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
 hidedecorations!(ax)
 save(figure_directory * "figure_4_emulated_truth_truth_error_unweighted_scenarios_tas.png", fig) # this is the one currently being used in the paper
-
-
+@info "Generated Figure 4."

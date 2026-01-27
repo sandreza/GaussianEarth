@@ -18,6 +18,8 @@ metric = read(hfile["metric"])
 close(hfile)
 sqrt_f_metric = sqrt.(reshape(metric, 192 * 96))
 
+include("../emulator.jl")
+
 ## construct raw fields
 tas_fields = []
 std_fields = []
@@ -101,50 +103,3 @@ for plot_std in (false, true)
         save(figure_directory * "emulated_mpi_comparison_2100_mean.png", fig)
     end
 end
-
-
-#### code to plot mean and std side by side:
-
-# fig = Figure(; resolution)
-# nlongitude = longitude .- 180
-# cmap = :plasma
-# cmap_std = :viridis
-# crange = extrema(emulated_truth[:,:,2])
-# crange_std = extrema(emulated_truth_std[:,:,2])
-# scenario_index = 2 
-# ax = GeoAxis(fig[1,1]; title = "SSP5-8.5", common_options...)
-# field = ground_truth[:, :, scenario_index]
-# shifted_field = circshift(field, (96, 0))
-# surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading) 
-# hidedecorations!(ax)
-# ax = GeoAxis(fig[1,2]; title = "SSP5-8.5", common_options...)
-# field = ground_truth_std[:, :, scenario_index]
-# shifted_field = circshift(field, (96, 0))
-# surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap_std, colorrange = crange_std, shading = NoShading) 
-# hidedecorations!(ax)
-# scenario_index = 3
-# ax = GeoAxis(fig[3,1]; title = "SSP1-1.9", common_options...)
-# field = ground_truth[:, :, scenario_index]
-# shifted_field = circshift(field, (96, 0))
-# surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading)
-# hidedecorations!(ax)
-# ax = GeoAxis(fig[3,2]; title = "SSP1-1.9", common_options...)
-# field = ground_truth_std[:, :, scenario_index]
-# shifted_field = circshift(field, (96, 0))
-# surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap_std, colorrange = crange_std, shading = NoShading) 
-# hidedecorations!(ax)
-# scenario_index = 4
-# ax = GeoAxis(fig[2,1]; title = "SSP2-4.5", common_options...)
-# field = ground_truth[:, :, scenario_index]
-# shifted_field = circshift(field, (96, 0))
-# surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap, colorrange = crange, shading = NoShading)
-# hidedecorations!(ax)
-# ax = GeoAxis(fig[2,2]; title = "SSP2-4.5", common_options...)
-# field = ground_truth_std[:, :, scenario_index]
-# shifted_field = circshift(field, (96, 0))
-# surface!(ax, nlongitude, latitude, shifted_field; colormap = cmap_std, colorrange = crange_std, shading = NoShading)
-# hidedecorations!(ax)
-# Colorbar(fig[4,1], colormap=cmap, colorrange=crange, width = Relative(3/4), height=Relative(1/30), vertical=false, label = "Temperature (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
-# Colorbar(fig[4,2], colormap=cmap_std, colorrange=crange_std, width = Relative(3/4), height=Relative(1/30), vertical=false, label = "Standard Deviation (K)", labelsize = legend_ls, ticklabelsize = legend_ls)
-# display(fig)
-# # save(figure_directory * "emulated_truth_unweighted_scenarios_tas.png", fig)

@@ -83,3 +83,4 @@ for (i, lat_index) in enumerate([1, 24, 48, 72, 96])
     end
 end
 save(figure_directory * "figure_6_latitude_mean_model_emulator_locations_together.png", fig)
+@info "Generated Figure 6"

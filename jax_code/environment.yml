@@ -49,4 +49,4 @@ dependencies:
       - scipy==1.14.0
       - toolz==0.12.1
       - typing-extensions==4.12.2
-prefix: /orcd/home/001/sandre/miniconda3/envs/jaxoptax
+prefix: /PLEASE/SET/ME/TO/YOUR/CONDA/PATH/jaxoptax

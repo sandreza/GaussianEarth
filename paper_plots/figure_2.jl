@@ -9,8 +9,8 @@ global_common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, x
 
 ##
 if process_data
-    include("emulator.jl")
-    include("emulator_hurs.jl")
+    include("../emulator.jl")
+    include("../emulator_hurs.jl")
     _, temperatures = concatenate_regression("tas", ["ssp119"])
 end
 ##

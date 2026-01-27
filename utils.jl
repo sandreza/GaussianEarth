@@ -2,8 +2,19 @@ using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
 using Random
 import Statistics.mean, Statistics.std, Random.rand
 
+
+const DEFAULT_SAVE_DIRECTORY = "PLEASE/SET/YOUR/SAVE/PATH/HERE/"
+const DEFAULT_DATA_DIRECTORY = "PLEASE/SET/YOUR/DATA/PATH/HERE/"
+
+function get_save_directory()
+    return @isdefined(save_directory) ? save_directory : DEFAULT_SAVE_DIRECTORY
+end
+function get_data_directory()
+    return @isdefined(data_directory) ? data_directory : DEFAULT_DATA_DIRECTORY
+end
+
 # grabbing data
-function regression_variable(scenario; directory = "/net/fs06/d3/sandre/GaussianEarthData", normalized = true)
+function regression_variable(scenario; directory = get_save_directory(), normalized = true)
     file_name = "/tas_ensemble_yearly_average.hdf5"
     hfile = h5open(directory * file_name, "r")
     if normalized
@@ -15,7 +26,7 @@ function regression_variable(scenario; directory = "/net/fs06/d3/sandre/Gaussian
     return global_mean_temperature
 end
 
-function eof_modes(variable, scenario; directory = "/net/fs06/d3/sandre/GaussianEarthData")
+function eof_modes(variable, scenario; directory = get_save_directory())
     file_name = "/$(variable)_$(scenario)_projection.hdf5"
     hfile = h5open(directory * file_name, "r")
     projection = read(hfile["projection"]) # has all 12 months
@@ -23,7 +34,7 @@ function eof_modes(variable, scenario; directory = "/net/fs06/d3/sandre/Gaussian
     return projection
 end
 
-function eof_basis(variable; directory = "/net/fs06/d3/sandre/GaussianEarthData")
+function eof_basis(variable; directory = get_save_directory())
     file_name = "/$(variable)_basis.hdf5"
     hfile = h5open(directory * file_name, "r")
     basis = read(hfile["basis"])
@@ -31,47 +42,11 @@ function eof_basis(variable; directory = "/net/fs06/d3/sandre/GaussianEarthData"
     return basis
 end
 
-function log_eof_modes(variable, scenario; directory = "/net/fs06/d3/sandre/GaussianEarthData")
-    file_name = "/$(variable)_$(scenario)_log_projection.hdf5"
-    hfile = h5open(directory * file_name, "r")
-    projection = read(hfile["projection"]) # has all 12 months
-    close(hfile)
-    return projection
-end
-
-function metric_eof_modes(variable, scenario; directory = "/net/fs06/d3/sandre/GaussianEarthData")
-    file_name = "/$(variable)_$(scenario)_metric_projection.hdf5"
-    hfile = h5open(directory * file_name, "r")
-    projection = read(hfile["projection"]) # has all 12 months
-    close(hfile)
-    return projection
-end
-
-function concatenate_regression(variable, scenarios; directory = "/net/fs06/d3/sandre/GaussianEarthData", normalized = true)
+function concatenate_regression(variable, scenarios; directory = get_save_directory(), normalized = true)
     modes = eof_modes(variable, scenarios[1]; directory)
     temperature = regression_variable(scenarios[1]; directory, normalized)
     for scenario in scenarios[2:end]
         modes = cat(modes, eof_modes(variable, scenario), dims = 2)
-        temperature = cat(temperature, regression_variable(scenario), dims = 1)
-    end
-    return modes, temperature
-end
-
-function concatenate_log_regression(variable, scenarios; directory = "/net/fs06/d3/sandre/GaussianEarthData", normalized = true)
-    modes = log_eof_modes(variable, scenarios[1]; directory)
-    temperature = regression_variable(scenarios[1]; directory, normalized)
-    for scenario in scenarios[2:end]
-        modes = cat(modes, log_eof_modes(variable, scenario), dims = 2)
-        temperature = cat(temperature, regression_variable(scenario), dims = 1)
-    end
-    return modes, temperature
-end
-
-function concatenate_metric_regression(variable, scenarios; directory = "/net/fs06/d3/sandre/GaussianEarthData", normalized = true)
-    modes = metric_eof_modes(variable, scenarios[1]; directory)
-    temperature = regression_variable(scenarios[1]; directory, normalized)
-    for scenario in scenarios[2:end]
-        modes = cat(modes, metric_eof_modes(variable, scenario), dims = 2)
         temperature = cat(temperature, regression_variable(scenario), dims = 1)
     end
     return modes, temperature
@@ -95,7 +70,7 @@ function regression(modes, temperature, month; order = 1, ensemble_members = 1:4
     return regression_coefficients
 end
 
-function common_array(scenario, variable; data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/", ensemble_members = 45)
+function common_array(scenario, variable; data_directory = get_data_directory(), ensemble_members = 45)
     current_path = joinpath(data_directory, scenario)
     local_current_path = joinpath(current_path, variable)
     file_names = readdir(local_current_path)
@@ -121,7 +96,7 @@ function common_array(scenario, variable; data_directory = "/net/fs06/d3/mgeo/CM
     return all_together
 end
 
-function ensemble_averaging(scenario, variable; data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/", ensemble_members = 45, return_std=false) #added option for std
+function ensemble_averaging(scenario, variable; data_directory = get_data_directory(), ensemble_members = 45, return_std=false) #added option for std
     current_path = joinpath(data_directory, scenario)
     local_current_path = joinpath(current_path, variable)
     file_names = readdir(local_current_path)

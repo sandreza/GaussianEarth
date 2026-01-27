@@ -17,6 +17,8 @@ metric = read(hfile["metric"])
 close(hfile)
 fmetric = reshape(metric, (192*96, 1))
 
+include("../emulator.jl")
+
 ##
 global_zonal_average_basis = mean(reshape(emulator.basis, (192, 96, 1980)), dims = 1)[1, :, 1:1000]
 global_mean_basis = sum(emulator.basis .* fmetric, dims = 1)[1:1000]

@@ -1,8 +1,3 @@
-using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars
-
-save_directory = "/net/fs06/d3/sandre/GaussianEarthData/"
-data_directory = "/net/fs06/d3/mgeo/CMIP6/interim/"
-
 # select historical scenario for basis computation
 scenario_directories = readdir(data_directory)
 scenario_directory = scenario_directories[1] # data directory must have scenario-named subdirectories
