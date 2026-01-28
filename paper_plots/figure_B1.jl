@@ -17,109 +17,99 @@ emulator = CovarEmulator(μmodel, Lmodel, basis) #this is the lnear one
 # now we have emulator and quadratic emulator, can do the error comparison
 
 # get metric correction terms
-if process_data
-    hfile = h5open(save_directory * field_name * "_basis.hdf5", "r")
-    latitude = read(hfile["latitude"])
-    longitude = read(hfile["longitude"])
-    metric = read(hfile["metric"])
-    close(hfile)
-    sqrt_f_metric = sqrt.(reshape(metric, 192 * 96))
-end
+hfile = h5open(save_directory * field_name * "_basis.hdf5", "r")
+latitude = read(hfile["latitude"])
+longitude = read(hfile["longitude"])
+metric = read(hfile["metric"])
+close(hfile)
+sqrt_f_metric = sqrt.(reshape(metric, 192 * 96))
 
 # get eof models for 10, 100, and 1000 modes 
-if process_data
-    hfile = h5open(save_directory * field_name * "_mean_regression.hdf5", "r")
-    regression_coefficients = read(hfile["regression_coefficients 1"])
-    linear_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
-    for month in ProgressBar(1:12)
-        linear_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
-    end
-    close(hfile)
+hfile = h5open(save_directory * field_name * "_mean_regression.hdf5", "r")
+regression_coefficients = read(hfile["regression_coefficients 1"])
+linear_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
+for month in ProgressBar(1:12)
+    linear_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
+end
+close(hfile)
 
-    Φ = eof_basis(field_name) #this is the only thing we're using here
-    averaged_coefficients = mean(linear_coefficients, dims = 3)[:, :, 1] #he was using the annual-avg coefficients
+Φ = eof_basis(field_name) #this is the only thing we're using here
+averaged_coefficients = mean(linear_coefficients, dims = 3)[:, :, 1] #he was using the annual-avg coefficients
 
-    eof_model10 = zeros(Float32, size(Φ)[1]..., 2)
-    eof_model100 = zeros(Float32, size(Φ)[1]..., 2)
-    eof_model1000 = zeros(Float32, size(Φ)[1]..., 2)
+eof_model10 = zeros(Float32, size(Φ)[1]..., 2)
+eof_model100 = zeros(Float32, size(Φ)[1]..., 2)
+eof_model1000 = zeros(Float32, size(Φ)[1]..., 2)
 
-    for i in ProgressBar(1:10)
-        eof_model10[:, 1] .+= Φ[:, i] * averaged_coefficients[i, 1]
-        eof_model10[:, 2] .+= Φ[:, i] * averaged_coefficients[i, 2]
-    end
-    for i in ProgressBar(1:100)
-        eof_model100[:, 1] .+= Φ[:, i] * averaged_coefficients[i, 1]
-        eof_model100[:, 2] .+= Φ[:, i] * averaged_coefficients[i, 2]
-    end
-    for i in ProgressBar(1:1000)
-        eof_model1000[:, 1] .+= Φ[:, i] * averaged_coefficients[i, 1]
-        eof_model1000[:, 2] .+= Φ[:, i] * averaged_coefficients[i, 2]
-    end
+for i in ProgressBar(1:10)
+    eof_model10[:, 1] .+= Φ[:, i] * averaged_coefficients[i, 1]
+    eof_model10[:, 2] .+= Φ[:, i] * averaged_coefficients[i, 2]
+end
+for i in ProgressBar(1:100)
+    eof_model100[:, 1] .+= Φ[:, i] * averaged_coefficients[i, 1]
+    eof_model100[:, 2] .+= Φ[:, i] * averaged_coefficients[i, 2]
+end
+for i in ProgressBar(1:1000)
+    eof_model1000[:, 1] .+= Φ[:, i] * averaged_coefficients[i, 1]
+    eof_model1000[:, 2] .+= Φ[:, i] * averaged_coefficients[i, 2]
 end
 
 # repeat for quadratic
-if process_data
-    hfile = h5open(save_directory * field_name * "_mean_regression_quadratic.hdf5", "r")
-    regression_coefficients = read(hfile["regression_coefficients 1"])
-    quadratic_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
-    for month in ProgressBar(1:12)
-        quadratic_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
-    end
-    close(hfile)
+hfile = h5open(save_directory * field_name * "_mean_regression_quadratic.hdf5", "r")
+regression_coefficients = read(hfile["regression_coefficients 1"])
+quadratic_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
+for month in ProgressBar(1:12)
+    quadratic_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
+end
+close(hfile)
 
-    # Φ = eof_basis(field_name) #this is the only thing we're using here
-    averaged_quad_coefficients = mean(quadratic_coefficients, dims = 3)[:, :, 1] #he was using the annual-avg coefficients
+# Φ = eof_basis(field_name) #this is the only thing we're using here
+averaged_quad_coefficients = mean(quadratic_coefficients, dims = 3)[:, :, 1] #he was using the annual-avg coefficients
 
-    quad_eof_model10 = zeros(Float32, size(Φ)[1]..., 3)
-    quad_eof_model100 = zeros(Float32, size(Φ)[1]..., 3)
-    quad_eof_model1000 = zeros(Float32, size(Φ)[1]..., 3)
+quad_eof_model10 = zeros(Float32, size(Φ)[1]..., 3)
+quad_eof_model100 = zeros(Float32, size(Φ)[1]..., 3)
+quad_eof_model1000 = zeros(Float32, size(Φ)[1]..., 3)
 
-    for i in ProgressBar(1:10)
-        quad_eof_model10[:, 1] .+= Φ[:, i] * averaged_quad_coefficients[i, 1]
-        quad_eof_model10[:, 2] .+= Φ[:, i] * averaged_quad_coefficients[i, 2]
-        quad_eof_model10[:, 3] .+= Φ[:, i] * averaged_quad_coefficients[i, 3]
-    end
-    for i in ProgressBar(1:100)
-        quad_eof_model100[:, 1] .+= Φ[:, i] * averaged_quad_coefficients[i, 1]
-        quad_eof_model100[:, 2] .+= Φ[:, i] * averaged_quad_coefficients[i, 2]
-        quad_eof_model100[:, 3] .+= Φ[:, i] * averaged_quad_coefficients[i, 3]
-    end
-    for i in ProgressBar(1:1000)
-        quad_eof_model1000[:, 1] .+= Φ[:, i] * averaged_quad_coefficients[i, 1]
-        quad_eof_model1000[:, 2] .+= Φ[:, i] * averaged_quad_coefficients[i, 2]
-        quad_eof_model1000[:, 3] .+= Φ[:, i] * averaged_quad_coefficients[i, 3]
-    end
+for i in ProgressBar(1:10)
+    quad_eof_model10[:, 1] .+= Φ[:, i] * averaged_quad_coefficients[i, 1]
+    quad_eof_model10[:, 2] .+= Φ[:, i] * averaged_quad_coefficients[i, 2]
+    quad_eof_model10[:, 3] .+= Φ[:, i] * averaged_quad_coefficients[i, 3]
+end
+for i in ProgressBar(1:100)
+    quad_eof_model100[:, 1] .+= Φ[:, i] * averaged_quad_coefficients[i, 1]
+    quad_eof_model100[:, 2] .+= Φ[:, i] * averaged_quad_coefficients[i, 2]
+    quad_eof_model100[:, 3] .+= Φ[:, i] * averaged_quad_coefficients[i, 3]
+end
+for i in ProgressBar(1:1000)
+    quad_eof_model1000[:, 1] .+= Φ[:, i] * averaged_quad_coefficients[i, 1]
+    quad_eof_model1000[:, 2] .+= Φ[:, i] * averaged_quad_coefficients[i, 2]
+    quad_eof_model1000[:, 3] .+= Φ[:, i] * averaged_quad_coefficients[i, 3]
 end
 
 ## get true data 
-if process_data
-    scenarios = ["historical", "ssp585", "ssp119", "ssp245"]
-    temperatures = [] 
-    fields = [] #list of four arrays of time x space data values for given variable
-    for scenario in scenarios
-        temperature = regression_variable(scenario) #this gets the list of temps to regress onto
-        a, b = ensemble_averaging(scenario, field_name; ensemble_members = 29, return_std=false)
-        push!(temperatures, temperature)
-        push!(fields, b)
-    end
+scenarios = ["historical", "ssp585", "ssp119", "ssp245"]
+temperatures = [] 
+fields = [] #list of four arrays of time x space data values for given variable
+for scenario in scenarios
+    temperature = regression_variable(scenario) #this gets the list of temps to regress onto
+    a, b = ensemble_averaging(scenario, field_name; ensemble_members = 29, return_std=false)
+    push!(temperatures, temperature)
+    push!(fields, b)
 end
 
 
 ##
-if process_data
-    scale_factor = 273
-    month = 1 # this is where we set which month we're looking at (January)
-    eof_mode, temperature = concatenate_regression(field, ["historical", "ssp585"]; directory = save_directory)
-    eofs = eof_mode[:,month:12:end, 1:45] 
+scale_factor = 273
+month = 1 # this is where we set which month we're looking at (January)
+eof_mode, temperature = concatenate_regression(field, ["historical", "ssp585"]; directory = save_directory)
+eofs = eof_mode[:,month:12:end, 1:45] 
 
-    hfile = h5open(save_directory * field * "_mean_regression.hdf5", "r")
-    regression_coefficients = read(hfile["regression_coefficients 1"])
-    linear_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
-    for month in ProgressBar(1:12)
-        linear_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
-    end
-    close(hfile)
+hfile = h5open(save_directory * field * "_mean_regression.hdf5", "r")
+regression_coefficients = read(hfile["regression_coefficients 1"])
+linear_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
+for month in ProgressBar(1:12)
+    linear_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
 end
+close(hfile)
 
 ## find most quadratic bits
 rmse_line = zeros(1000)

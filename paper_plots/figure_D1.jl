@@ -34,69 +34,68 @@ mean_modes = mode_mean(emulator; modes = 1000)
 σs = [sqrt(global_zonal_average_basis[i, :]' * (Σ * global_zonal_average_basis[i,:])) for i in ProgressBar(1:96)]
 μs = [mean_modes' * global_zonal_average_basis[i, :] for i in 1:96]
 
-if process_data
-    cold_mus = Float32[]
-    cold_sigmas = Float32[]
-    cold_mus_lat = Vector{Float32}[]
-    cold_sigmas_lat = Vector{Float32}[]
-    cold_mus_upper = Float32[]
-    cold_sigmas_upper = Float32[]
-    cold_mus_lower = Float32[]
-    cold_sigmas_lower = Float32[]
-    for month in 1:12
-        emulator.global_mean_temperature[1] = min_temp 
-        emulator.month[1] = month
-        Σ = emulator_variance(emulator)
-        mean_modes = mode_mean(emulator; modes = 1000)
-        σ = sqrt(global_mean_basis' * (Σ * global_mean_basis)) 
-        μ = mean_modes' * global_mean_basis
-        push!(cold_mus, μ)
-        push!(cold_sigmas, σ)
-        σs_lat = [sqrt(global_zonal_average_basis[i, :]' * (Σ * global_zonal_average_basis[i,:])) for i in ProgressBar(1:96)]
-        μs_lat = [mean_modes' * global_zonal_average_basis[i, :] for i in 1:96]
-        push!(cold_mus_lat, μs_lat)
-        push!(cold_sigmas_lat, σs_lat)
-        σ_lower = sqrt(global_mean_basis_lower' * (Σ * global_mean_basis_lower))
-        μ_lower = mean_modes' * global_mean_basis_lower
-        push!(cold_mus_lower, μ_lower)
-        push!(cold_sigmas_lower, σ_lower)
-        σ_upper = sqrt(global_mean_basis_upper' * (Σ * global_mean_basis_upper))
-        μ_upper = mean_modes' * global_mean_basis_upper
-        push!(cold_mus_upper, μ_upper)
-        push!(cold_sigmas_upper, σ_upper)
-    end
+cold_mus = Float32[]
+cold_sigmas = Float32[]
+cold_mus_lat = Vector{Float32}[]
+cold_sigmas_lat = Vector{Float32}[]
+cold_mus_upper = Float32[]
+cold_sigmas_upper = Float32[]
+cold_mus_lower = Float32[]
+cold_sigmas_lower = Float32[]
+for month in 1:12
+    emulator.global_mean_temperature[1] = min_temp 
+    emulator.month[1] = month
+    Σ = emulator_variance(emulator)
+    mean_modes = mode_mean(emulator; modes = 1000)
+    σ = sqrt(global_mean_basis' * (Σ * global_mean_basis)) 
+    μ = mean_modes' * global_mean_basis
+    push!(cold_mus, μ)
+    push!(cold_sigmas, σ)
+    σs_lat = [sqrt(global_zonal_average_basis[i, :]' * (Σ * global_zonal_average_basis[i,:])) for i in ProgressBar(1:96)]
+    μs_lat = [mean_modes' * global_zonal_average_basis[i, :] for i in 1:96]
+    push!(cold_mus_lat, μs_lat)
+    push!(cold_sigmas_lat, σs_lat)
+    σ_lower = sqrt(global_mean_basis_lower' * (Σ * global_mean_basis_lower))
+    μ_lower = mean_modes' * global_mean_basis_lower
+    push!(cold_mus_lower, μ_lower)
+    push!(cold_sigmas_lower, σ_lower)
+    σ_upper = sqrt(global_mean_basis_upper' * (Σ * global_mean_basis_upper))
+    μ_upper = mean_modes' * global_mean_basis_upper
+    push!(cold_mus_upper, μ_upper)
+    push!(cold_sigmas_upper, σ_upper)
+end
 
-    hot_mus = Float32[]
-    hot_sigmas = Float32[]
-    hot_mus_lat = Vector{Float32}[]
-    hot_sigmas_lat = Vector{Float32}[]
-    hot_mus_upper = Float32[]
-    hot_sigmas_upper = Float32[]
-    hot_mus_lower = Float32[]
-    hot_sigmas_lower = Float32[]
-    for month in 1:12
-        emulator.global_mean_temperature[1] = max_temp 
-        emulator.month[1] = month
-        Σ = emulator_variance(emulator)
-        mean_modes = mode_mean(emulator; modes = 1000)
-        σ = sqrt(global_mean_basis' * (Σ * global_mean_basis)) 
-        μ = mean_modes' * global_mean_basis
-        push!(hot_mus, μ)
-        push!(hot_sigmas, σ)
-        σs_lat = [sqrt(global_zonal_average_basis[i, :]' * (Σ * global_zonal_average_basis[i,:])) for i in ProgressBar(1:96)]
-        μs_lat = [mean_modes' * global_zonal_average_basis[i, :] for i in 1:96]
-        push!(hot_mus_lat, μs_lat)
-        push!(hot_sigmas_lat, σs_lat)
-        σ_lower = sqrt(global_mean_basis_lower' * (Σ * global_mean_basis_lower))
-        μ_lower = mean_modes' * global_mean_basis_lower
-        push!(hot_mus_lower, μ_lower)
-        push!(hot_sigmas_lower, σ_lower)
-        σ_upper = sqrt(global_mean_basis_upper' * (Σ * global_mean_basis_upper))
-        μ_upper = mean_modes' * global_mean_basis_upper
-        push!(hot_mus_upper, μ_upper)
-        push!(hot_sigmas_upper, σ_upper)
-    end
-end 
+hot_mus = Float32[]
+hot_sigmas = Float32[]
+hot_mus_lat = Vector{Float32}[]
+hot_sigmas_lat = Vector{Float32}[]
+hot_mus_upper = Float32[]
+hot_sigmas_upper = Float32[]
+hot_mus_lower = Float32[]
+hot_sigmas_lower = Float32[]
+for month in 1:12
+    emulator.global_mean_temperature[1] = max_temp 
+    emulator.month[1] = month
+    Σ = emulator_variance(emulator)
+    mean_modes = mode_mean(emulator; modes = 1000)
+    σ = sqrt(global_mean_basis' * (Σ * global_mean_basis)) 
+    μ = mean_modes' * global_mean_basis
+    push!(hot_mus, μ)
+    push!(hot_sigmas, σ)
+    σs_lat = [sqrt(global_zonal_average_basis[i, :]' * (Σ * global_zonal_average_basis[i,:])) for i in ProgressBar(1:96)]
+    μs_lat = [mean_modes' * global_zonal_average_basis[i, :] for i in 1:96]
+    push!(hot_mus_lat, μs_lat)
+    push!(hot_sigmas_lat, σs_lat)
+    σ_lower = sqrt(global_mean_basis_lower' * (Σ * global_mean_basis_lower))
+    μ_lower = mean_modes' * global_mean_basis_lower
+    push!(hot_mus_lower, μ_lower)
+    push!(hot_sigmas_lower, σ_lower)
+    σ_upper = sqrt(global_mean_basis_upper' * (Σ * global_mean_basis_upper))
+    μ_upper = mean_modes' * global_mean_basis_upper
+    push!(hot_mus_upper, μ_upper)
+    push!(hot_sigmas_upper, σ_upper)
+end
+ 
 month_string = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 xticks = (1:12, month_string)
 

@@ -11,18 +11,16 @@ linewidth = 5
 field_name = "tas" 
 colors = [:red4, :red, :indigo, :magenta3]
 
-if process_data
-    hfile = h5open(save_directory * field_name * "_basis.hdf5", "r")
-    latitude = read(hfile["latitude"])
-    longitude = read(hfile["longitude"])
-    metric = read(hfile["metric"])
-    close(hfile)
-    sqrt_f_metric = sqrt.(reshape(metric, 192 * 96))
+hfile = h5open(save_directory * field_name * "_basis.hdf5", "r")
+latitude = read(hfile["latitude"])
+longitude = read(hfile["longitude"])
+metric = read(hfile["metric"])
+close(hfile)
+sqrt_f_metric = sqrt.(reshape(metric, 192 * 96))
 
-    Φ = eof_basis(field_name) 
+Φ = eof_basis(field_name) 
 
-    include("../emulator.jl")
-end
+include("../emulator.jl")
 
 if !isfile(figure_directory * field_name * "_full_errors.hdf5")
     get_errors = true
@@ -32,16 +30,14 @@ end
 
 if get_errors
     ## get true data for comparison
-    if process_data
-        scenarios = ["historical", "ssp585", "ssp119", "ssp245"]
-        temperatures = [] 
-        fields = [] #list of four arrays of time x space data values for given variable #NEEDS to be standard deviation !!
-        for scenario in scenarios
-            temperature = regression_variable(scenario) #this gets the list of temps to regress onto
-            a, b = ensemble_averaging(scenario, field_name; ensemble_members = 29, return_std=true) #gets the ensemble avg for that var? #changed this 
-            push!(temperatures, temperature)
-            push!(fields, a[:,:,:,:]) # stds for all months
-        end
+    scenarios = ["historical", "ssp585", "ssp119", "ssp245"]
+    temperatures = [] 
+    fields = [] #list of four arrays of time x space data values for given variable #NEEDS to be standard deviation !!
+    for scenario in scenarios
+        temperature = regression_variable(scenario) #this gets the list of temps to regress onto
+        a, b = ensemble_averaging(scenario, field_name; ensemble_members = 29, return_std=true) #gets the ensemble avg for that var? #changed this 
+        push!(temperatures, temperature)
+        push!(fields, a[:,:,:,:]) # stds for all months
     end
 
     ## get the errors

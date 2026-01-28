@@ -6,42 +6,40 @@ legend_ls = 35
 resolution = (3000, 1000)
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 
-if process_data 
-    use_bundle = @isdefined(use_ground_truth_bundle) ? use_ground_truth_bundle : false
-    bundle_path = @isdefined(ground_truth_bundle_path) ? ground_truth_bundle_path : get_ground_truth_bundle_path()
+use_bundle = @isdefined(use_ground_truth_bundle) ? use_ground_truth_bundle : false
+bundle_path = @isdefined(ground_truth_bundle_path) ? ground_truth_bundle_path : get_ground_truth_bundle_path()
 
-    month = 1
-    field = "tas"
+month = 1
+field = "tas"
 
-    hfile = h5open(save_directory * field * "_basis.hdf5", "r")
-    latitude = read(hfile["latitude"])
-    longitude = read(hfile["longitude"])
-    metric = read(hfile["metric"])
-    close(hfile)
-    eof_mode, temperature = concatenate_regression(field, ["historical"])
-    eofs = eof_mode[:,:, 1:45] # [1:48..., 50:50...]]
-    if !(use_bundle && has_ground_truth_bundle(bundle_path))
-        historical_field = common_array("historical", field)
-    end
-    hfile = h5open(save_directory * field * "_basis.hdf5", "r")
-    latitude = read(hfile["latitude"])
-    longitude = read(hfile["longitude"])
-    metric = read(hfile["metric"])
-    close(hfile)
-    year_inds = 1:(argmin(temperature)-1) # volcano year
-    acceptible_inds_lower = (temperature .> minimum(temperature[year_inds]))
-    acceptible_inds_upper = (temperature .< maximum(temperature[year_inds]))
-    acceptible_inds = acceptible_inds_lower .& acceptible_inds_upper
-    year_inds = collect(eachindex(temperature))[acceptible_inds]
-    modes = 1000 
-
-    include("../emulator.jl")
-
-    mean_field = mean(emulator; modes)
-    variance_field = variance(emulator; modes)
-    mean_modes = mode_mean(emulator; modes)
-    variance_modes = mode_variance(emulator; modes)
+hfile = h5open(save_directory * field * "_basis.hdf5", "r")
+latitude = read(hfile["latitude"])
+longitude = read(hfile["longitude"])
+metric = read(hfile["metric"])
+close(hfile)
+eof_mode, temperature = concatenate_regression(field, ["historical"])
+eofs = eof_mode[:,:, 1:45] # [1:48..., 50:50...]]
+if !(use_bundle && has_ground_truth_bundle(bundle_path))
+    historical_field = common_array("historical", field)
 end
+hfile = h5open(save_directory * field * "_basis.hdf5", "r")
+latitude = read(hfile["latitude"])
+longitude = read(hfile["longitude"])
+metric = read(hfile["metric"])
+close(hfile)
+year_inds = 1:(argmin(temperature)-1) # volcano year
+acceptible_inds_lower = (temperature .> minimum(temperature[year_inds]))
+acceptible_inds_upper = (temperature .< maximum(temperature[year_inds]))
+acceptible_inds = acceptible_inds_lower .& acceptible_inds_upper
+year_inds = collect(eachindex(temperature))[acceptible_inds]
+modes = 1000 
+
+include("../emulator.jl")
+
+mean_field = mean(emulator; modes)
+variance_field = variance(emulator; modes)
+mean_modes = mode_mean(emulator; modes)
+variance_modes = mode_variance(emulator; modes)
 
 modes = 1000 
 mean_field = mean(emulator; modes)

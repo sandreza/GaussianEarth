@@ -8,14 +8,14 @@ lw = 7
 global_common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 
 ##
-if process_data
-    use_bundle = @isdefined(use_ground_truth_bundle) ? use_ground_truth_bundle : false
-    bundle_path = @isdefined(ground_truth_bundle_path) ? ground_truth_bundle_path : get_ground_truth_bundle_path()
 
-    include("../emulator.jl")
-    include("../emulator_hurs.jl")
-    _, temperatures = concatenate_regression("tas", ["ssp119"])
-end
+use_bundle = @isdefined(use_ground_truth_bundle) ? use_ground_truth_bundle : false
+bundle_path = @isdefined(ground_truth_bundle_path) ? ground_truth_bundle_path : get_ground_truth_bundle_path()
+
+include("../emulator.jl")
+include("../emulator_hurs.jl")
+_, temperatures = concatenate_regression("tas", ["ssp119"])
+
 ##
 month = 1
 field = "tas"
@@ -27,7 +27,7 @@ metric = read(hfile["metric"])
 close(hfile)
 fmetric = reshape(metric, (192*96, 1))
 ##
-if process_data && use_bundle && has_ground_truth_bundle(bundle_path)
+if use_bundle && has_ground_truth_bundle(bundle_path)
     function f2_samples(month, key, level)
         return read_ground_truth("samples/figure_2/month_$month/$key/$level"; bundle_path)
     end
@@ -71,16 +71,15 @@ month = 1
 ##
 observables = [location_1, location_2, location_3]
 ##
-if process_data
-    if !(use_bundle && has_ground_truth_bundle(bundle_path))
-        historical_tas = common_array("historical", "tas"; ensemble_members = 45)
-        historical_hurs = common_array("historical", "hurs"; ensemble_members = 29)
-        ssp119_tas = common_array("ssp119", "tas"; ensemble_members = 45)
-        ssp119_hurs = common_array("ssp119", "hurs"; ensemble_members = 29)
-    end
-    historical_temperatures = regression_variable("historical")
-    ssp119_temperatures = regression_variable("ssp119")
+if !(use_bundle && has_ground_truth_bundle(bundle_path))
+    historical_tas = common_array("historical", "tas"; ensemble_members = 45)
+    historical_hurs = common_array("historical", "hurs"; ensemble_members = 29)
+    ssp119_tas = common_array("ssp119", "tas"; ensemble_members = 45)
+    ssp119_hurs = common_array("ssp119", "hurs"; ensemble_members = 29)
 end
+historical_temperatures = regression_variable("historical")
+ssp119_temperatures = regression_variable("ssp119")
+
 ##
 window = 2 
 increment = 2 * window + 1

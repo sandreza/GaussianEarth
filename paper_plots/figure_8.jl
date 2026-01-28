@@ -8,14 +8,12 @@ for scenario in ["ssp245", "ssp585"]
     lw = 7
     global_common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 
-    if process_data
-        use_bundle = @isdefined(use_ground_truth_bundle) ? use_ground_truth_bundle : false
-        bundle_path = @isdefined(ground_truth_bundle_path) ? ground_truth_bundle_path : get_ground_truth_bundle_path()
+    use_bundle = @isdefined(use_ground_truth_bundle) ? use_ground_truth_bundle : false
+    bundle_path = @isdefined(ground_truth_bundle_path) ? ground_truth_bundle_path : get_ground_truth_bundle_path()
 
-        include("../emulator.jl")
-        include("../emulator_hurs.jl")
-        _, temperatures = concatenate_regression("tas", ["historical", scenario])
-    end
+    include("../emulator.jl")
+    include("../emulator_hurs.jl")
+    _, temperatures = concatenate_regression("tas", ["historical", scenario])
     ##
     month = 1
     field = "tas"
@@ -27,7 +25,7 @@ for scenario in ["ssp245", "ssp585"]
     close(hfile)
     fmetric = reshape(metric, (192*96, 1))
     ##
-    if process_data && use_bundle && has_ground_truth_bundle(bundle_path)
+    if use_bundle && has_ground_truth_bundle(bundle_path)
         function f8_samples(field, month, key, scenario)
             return read_ground_truth("samples/figure_8/$field/month_$month/$key/$scenario"; bundle_path)
         end
@@ -72,16 +70,14 @@ for scenario in ["ssp245", "ssp585"]
     ##
     observables = [location_1, location_3]
     ##
-    if process_data
-        if !(use_bundle && has_ground_truth_bundle(bundle_path))
-            historical_tas = common_array("historical", "tas"; ensemble_members = 45)
-            historical_hurs = common_array("historical", "hurs"; ensemble_members = 29)
-            scenario_tas = common_array(scenario, "tas"; ensemble_members = 45)
-            scenario_hurs = common_array(scenario, "hurs"; ensemble_members = 29)
-        end
-        historical_temperatures = regression_variable("historical")
-        scenario_temperatures = regression_variable(scenario)
+    if !(use_bundle && has_ground_truth_bundle(bundle_path))
+        historical_tas = common_array("historical", "tas"; ensemble_members = 45)
+        historical_hurs = common_array("historical", "hurs"; ensemble_members = 29)
+        scenario_tas = common_array(scenario, "tas"; ensemble_members = 45)
+        scenario_hurs = common_array(scenario, "hurs"; ensemble_members = 29)
     end
+    historical_temperatures = regression_variable("historical")
+    scenario_temperatures = regression_variable(scenario)
     ##
     indmin = 100
     min_temp = historical_temperatures[indmin]

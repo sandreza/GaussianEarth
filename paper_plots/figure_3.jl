@@ -7,19 +7,18 @@ resolution = (3000, 1000)
 common_options = (; titlesize = ts, xlabelsize = xls, ylabelsize = yls, xticklabelsize = tls, yticklabelsize = tls)
 
 ##
-if process_data
-    field = "tas"
-    month = 1
-    covsave = h5open(save_directory * field * "_covariances.hdf5", "r")
-    cov1 = covsave["covariances $month"][:,:,:]
-    temperature_cov = covsave["temperature"][:]
-    scale = read(covsave["scale"])
-    close(covsave)
 
-    covsave = h5open(save_directory * field * "_covariances_model.hdf5", "r")
-    L = covsave["L" * "$month"][:,:, :]
-    close(covsave)
-end
+field = "tas"
+month = 1
+covsave = h5open(save_directory * field * "_covariances.hdf5", "r")
+cov1 = covsave["covariances $month"][:,:,:]
+temperature_cov = covsave["temperature"][:]
+scale = read(covsave["scale"])
+close(covsave)
+
+covsave = h5open(save_directory * field * "_covariances_model.hdf5", "r")
+L = covsave["L" * "$month"][:,:, :]
+close(covsave)
 
 Σ⁰ = L[:,:,1]' * L[:,:,1]
 Σ¹ = L[:,:,1]' * L[:,:,2] + L[:,:,2]' * L[:,:,1]
@@ -37,20 +36,18 @@ function model(Σ⁰, Σ¹, Σ², temperature)
 end
 
 ##
-if process_data
-    scale = 273
-    month = 1
-    eof_mode, temperature = concatenate_regression(field, ["historical", "ssp585"])
-    eofs = eof_mode[:,month:12:end, 1:45] 
+scale = 273
+month = 1
+eof_mode, temperature = concatenate_regression(field, ["historical", "ssp585"])
+eofs = eof_mode[:,month:12:end, 1:45] 
 
-    hfile = h5open(save_directory * field * "_mean_regression_quadratic.hdf5", "r")
-    regression_coefficients = read(hfile["regression_coefficients 1"])
-    quadratic_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
-    for month in ProgressBar(1:12)
-        quadratic_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
-    end
-    close(hfile)
+hfile = h5open(save_directory * field * "_mean_regression_quadratic.hdf5", "r")
+regression_coefficients = read(hfile["regression_coefficients 1"])
+quadratic_coefficients = zeros(Float32, size(regression_coefficients)..., 12)
+for month in ProgressBar(1:12)
+    quadratic_coefficients[:, :, month] .= read(hfile["regression_coefficients $month"])
 end
+close(hfile)
 
 ##
 fig = Figure(; resolution)

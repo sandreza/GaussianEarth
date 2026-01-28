@@ -1,12 +1,14 @@
 # EarthCovar
 
-Code for "An EOF-Based Emulator of Means and Covariances of Monthly Climate Fields".
+Code for "An EOF-Based Emulator of Means and Covariances of Monthly Climate Fields", G. Geogdzhayev, A. N. Souza, G. R. Flierl, and R. Ferrari, *Earth System Dyamics*, 2026.
 
 This repo supports two workflows:
 1) Regenerate the emulator HDF5 artifacts from slightly pre-processed CMIP data. 
 2) Load precomputed HDF5s and use the emulator directly.
 
 It also includes a one-shot script to generate all figures in the manuscript.
+
+The HDF5 artifacts are saved to Zenodo in `hdf.zip` and the codebase is saved as `EarthCovar.zip`. Download and unzip both to use the emulator without regenerating it, or only the latter if you are beginning from scratch with CMIP model data.
 
 ## Quick Start
 
@@ -17,7 +19,7 @@ It also includes a one-shot script to generate all figures in the manuscript.
 
 ## Paths Configuration
 
-Set `save_directory` at the top of each of the following files. This will house all HDF5 save-out files.
+Set `save_directory` at the top of each of the following files. This will house all HDF5 save-out files. If you are using the files in `hdf.zip`, point `save_directory` to where those files are stored. 
 
 - Emulator generation workflow:
   - `generate_emulator.jl` 
@@ -27,6 +29,8 @@ Set `save_directory` at the top of each of the following files. This will house 
 
 In the generation workflow, update the `data_directory` in the same two scripts. 
 The generation workflow will read from the data directory and save HDF5 files to the save directory. The emulator and figure creation workflow will read these files from the save directory. 
+
+Additionally, one may change the default `figure_directory` at the top of `generate_figures.jl`. By default this is set to be the folder `figures` in the working directory. The script will automatically create this directory if it does not already exist. 
 
 ## A Note on The Data
 

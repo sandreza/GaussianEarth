@@ -1,5 +1,7 @@
 figure_directory = "figures/"
-process_data = true
+if !isdir(figure_directory)
+    mkpath(figure_directory)
+end
 
 using CairoMakie, Printf, GeoMakie
 using NCDatasets, LinearAlgebra, Statistics, HDF5, ProgressBars

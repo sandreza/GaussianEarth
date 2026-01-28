@@ -19,17 +19,16 @@ sqrt_f_metric = sqrt.(reshape(metric, 192 * 96))
 
 #### now for stds
 ## get true std data for comparison
-if process_data
-    scenarios = ["historical", "ssp585", "ssp119", "ssp245"]
-    temperatures = [] 
-    fields = [] #list of four arrays of time x space data values for given variable
-    for scenario in scenarios
-        temperature = regression_variable(scenario) #this gets the list of temps to regress onto
-        a, b = ensemble_averaging(scenario, field_name; ensemble_members = 45, return_std=true) #gets the ensemble avg for that var? #changed this 
-        push!(temperatures, temperature)
-        push!(fields, a[:,:,:,:]) # stds for all months
-    end
+scenarios = ["historical", "ssp585", "ssp119", "ssp245"]
+temperatures = [] 
+fields = [] #list of four arrays of time x space data values for given variable
+for scenario in scenarios
+    temperature = regression_variable(scenario) #this gets the list of temps to regress onto
+    a, b = ensemble_averaging(scenario, field_name; ensemble_members = 45, return_std=true) #gets the ensemble avg for that var? #changed this 
+    push!(temperatures, temperature)
+    push!(fields, a[:,:,:,:]) # stds for all months
 end
+
 
 mean_stds = zeros(Float32, 192, 96, 12, length(scenarios))
 for scenario_index in 1:4
